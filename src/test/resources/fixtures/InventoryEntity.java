@@ -6,6 +6,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,9 +21,12 @@ public class InventoryEntity {
     @JoinColumn(nullable = false, name = "char_id")
     private  fixtures.CharacterEntity characterEntity;
 
-    @OneToMany
+    @jakarta.persistence.OneToMany
     @JoinColumn(nullable = false, name = "id")
-    private java.util.List<String> items;
+    private java.util.List<ItemEntity> items;
 
     private Instant lastUpdatedAt;
+
+    @Transient
+    private long internalId;
 }

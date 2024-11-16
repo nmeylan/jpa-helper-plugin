@@ -2,18 +2,19 @@ package ch.nmeylan.plugin.jpa.generator.model;
 
 import com.intellij.psi.PsiType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class EntityField {
     private final String name;
     private final PsiType type;
-    private boolean isRelation;
     private List<EntityField> relationFields;
+    private boolean isCollection;
 
     public EntityField(String name, PsiType type) {
         this.name = name;
         this.type = type;
-        this.isRelation = false;
+        isCollection = false;
     }
 
     public String getName() {
@@ -24,8 +25,20 @@ public class EntityField {
         return type;
     }
 
-    public boolean isRelation() {
-        return isRelation;
+    public boolean isCollection() {
+        return isCollection;
+    }
+
+    public EntityField setCollection(boolean collection) {
+        isCollection = collection;
+        return this;
+    }
+
+    public List<EntityField> getMutRelationFields() {
+        if (relationFields == null) {
+            relationFields = new ArrayList<>();
+        }
+        return relationFields;
     }
 
     public List<EntityField> getRelationFields() {

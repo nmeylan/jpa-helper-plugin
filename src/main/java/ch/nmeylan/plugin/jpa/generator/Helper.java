@@ -1,131 +1,148 @@
 package ch.nmeylan.plugin.jpa.generator;
 
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
+import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
+import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiArrayType;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiType;
-import com.intellij.psi.util.InheritanceUtil;
+import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTypesUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class Helper {
 
-    public static final List<String> CLASSES_WITH_PACKAGE = Arrays.asList(
-        "java.util.AbstractCollection",
-        "java.util.AbstractList",
-        "java.util.AbstractQueue",
-        "java.util.AbstractSequentialList",
-        "java.util.AbstractSet",
-        "java.util.concurrent.ArrayBlockingQueue",
-        "java.util.ArrayDeque",
-        "java.util.ArrayList",
-        "javax.management.AttributeList",
-        "java.sql.BatchUpdateException",
-        "java.util.concurrent.ConcurrentHashMap.KeySetView",
-        "java.util.concurrent.ConcurrentLinkedDeque",
-        "java.util.concurrent.ConcurrentLinkedQueue",
-        "java.util.concurrent.ConcurrentSkipListSet",
-        "java.util.concurrent.CopyOnWriteArrayList",
-        "java.util.concurrent.CopyOnWriteArraySet",
-        "java.sql.DataTruncation",
-        "java.util.concurrent.DelayQueue",
-        "java.util.EnumSet",
-        "java.util.HashSet",
-        "java.util.concurrent.LinkedBlockingDeque",
-        "java.util.concurrent.LinkedBlockingQueue",
-        "java.util.LinkedHashSet",
-        "java.util.LinkedList",
-        "java.util.concurrent.LinkedTransferQueue",
-        "java.util.concurrent.PriorityBlockingQueue",
-        "java.util.PriorityQueue"
-    );
+    private static Map<String, PsiClass> classes = new HashMap<String, PsiClass>();
+    private static Set<String> RELATIONS_ANNOTATIONS = Set.of("OneToMany", "OneToOne", "ManyToMany", "ManyToOne");
+    private static Set<String> JPA_PACKAGES = Set.of("javax.persistence", "jakarta.persistence", "");
 
     public static List<EntityField> entityFields(PsiClass psiClass) {
         List<EntityField> fields = new ArrayList<>();
-        collectEntityFields(psiClass, fields);
+        List<String> visitedClasses = new ArrayList<>();
+        collectEntityFields(psiClass, fields, visitedClasses);
         return fields;
     }
 
-    private static void collectEntityFields(PsiClass psiClass, List<EntityField> fields) {
-        for (PsiField field : psiClass.getFields()) {
-            if (!isTransientField(field)) {
-                EntityField entityField = new EntityField(field.getName(), field.getType());
-                fields.add(entityField);
+    public static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, Integer> callback) {
+        iterateEntityFields(fields, callback, 0);
+    }
 
-
-
-                String canonicalText = field.getType().getCanonicalText();
-                PsiClass psiClass1 = PsiTypesUtil.getPsiClass(field.getType());
-                System.out.println(canonicalText + " -> " + psiClass1);
-//               if (canonicalText.startsWith("java.util.")) {
-//        return canonicalText.equals("java.util.Collection") ||
-//               canonicalText.equals("java.util.List") ||
-//               canonicalText.equals("java.util.Set") ||
-//               canonicalText.equals("java.util.Map") ||
-//               canonicalText.startsWith("java.util.ArrayList") ||
-//               canonicalText.startsWith("java.util.LinkedList") ||
-//               canonicalText.startsWith("java.util.HashSet") ||
-//               canonicalText.startsWith("java.util.TreeSet") ||
-//               canonicalText.startsWith("java.util.HashMap") ||
-//               canonicalText.startsWith("java.util.TreeMap");
-
+    private static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, Integer> callback, int depth) {
+        fields.sort((o1, o2) -> {
+            if (o1.getRelationFields() == null && o2.getRelationFields() != null) {
+                return -1;
+            }
+            if (o1.getRelationFields() != null && o2.getRelationFields() == null) {
+                return 1;
+            }
+            return 0;
+        });
+        for (EntityField field : fields) {
+            callback.accept(field, depth);
+            if (field.getRelationFields() != null) {
+                iterateEntityFields(field.getRelationFields(), callback, depth + 1);
             }
         }
     }
 
-    public static boolean isCollectionField(PsiField field) {
-        PsiType type = field.getType();
+    private static void collectEntityFields(PsiClass psiClass, List<EntityField> fields, List<String> visitedClasses) {
+        if (psiClass == null || visitedClasses.contains(psiClass.getQualifiedName())) {
+            return;
+        }
+        visitedClasses.add(psiClass.getQualifiedName());
+        for (PsiField field : psiClass.getFields()) {
+            if (!isTransientField(field)) {
+                PsiType fieldType = field.getType();
+                EntityField entityField = new EntityField(field.getName(), fieldType);
+                fields.add(entityField);
+                boolean isCollection = isCollection(fieldType);
+                entityField.setCollection(isCollection);
+                if (hasRelation(field)) {
+                    if (isCollection) {
+                        PsiClassType classType = (PsiClassType) fieldType;
+                        PsiType genericType = null;
+                        if (classType.getParameters().length > 1) {
+                            genericType = classType.getParameters()[1];
+                        } else if (classType.getParameters().length > 0) {
+                            genericType = classType.getParameters()[0];
+                        }
+                        if (genericType != null) {
+                            collectEntityFields(PsiTypesUtil.getPsiClass(genericType), entityField.getMutRelationFields(), visitedClasses);
+                        }
+                    } else {
+                        collectEntityFields(PsiTypesUtil.getPsiClass(fieldType), entityField.getMutRelationFields(), visitedClasses);
+                    }
+                }
+            }
+        }
+    }
 
-        // Check if it's an array
-        if (type instanceof PsiArrayType) {
+    public static boolean isCollection(PsiType psiType) {
+        if (psiType instanceof PsiClassType) {
+            PsiClassType classType = (PsiClassType) psiType;
+            PsiClass psiClass = classType.resolve();
+            if (psiClass != null) {
+                if (psiClass.isEquivalentTo(findClass("java.util.Collection", psiClass.getProject()))
+                        || psiClass.isInheritor(findClass("java.util.Collection", psiClass.getProject()), true)
+                        || psiClass.isInheritor(findClass("java.util.Map", psiClass.getProject()), true)
+                        || psiClass.isEquivalentTo(findClass("java.util.Map", psiClass.getProject()))
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        if (psiType instanceof PsiArrayType) {
             return true;
         }
 
-        // Handle primitive types and other non-class types
-        if (!(type instanceof PsiClassType)) {
-            return false;
-        }
-
-        PsiClassType classType = (PsiClassType) type;
-        String canonicalText = classType.getCanonicalText();
-
-        // Check for known collection types
-        if (canonicalText.startsWith("java.util.")) {
-            return canonicalText.startsWith("java.util.Collection") ||
-                    canonicalText.startsWith("java.util.List") ||
-                    canonicalText.startsWith("java.util.Set") ||
-                    canonicalText.startsWith("java.util.Map") ||
-                    canonicalText.startsWith("java.util.ArrayList") ||
-                    canonicalText.startsWith("java.util.LinkedList") ||
-                    canonicalText.startsWith("java.util.HashSet") ||
-                    canonicalText.startsWith("java.util.TreeSet") ||
-                    canonicalText.startsWith("java.util.HashMap") ||
-                    canonicalText.startsWith("java.util.TreeMap");
-        }
-
-        PsiClass psiClass = classType.resolve();
-        if (psiClass != null) {
-            return InheritanceUtil.isInheritor(psiClass, "java.util.Collection") ||
-                    InheritanceUtil.isInheritor(psiClass, "java.util.Map");
-        }
-
-        // If resolution fails, try to infer from the name
-        String className = classType.getClassName();
-        return className != null && (
-                className.endsWith("List") ||
-                        className.endsWith("Set") ||
-                        className.endsWith("Map") ||
-                        className.endsWith("Collection"));
+        return false;
     }
 
-    private static boolean isTransientField(PsiField field) {
-        return field.getModifierList() != null
-                && field.getModifierList().findAnnotation("javax.persistence.Transient") != null
-                && field.getModifierList().findAnnotation("jakarta.persistence.Transient") != null;
+    public static boolean isTransientField(PsiField field) {
+        if (field.getModifierList() == null) {
+            return false;
+        }
+        for (String jpaPackage : JPA_PACKAGES) {
+            PsiAnnotation annotation = field.getModifierList().findAnnotation((jpaPackage.isEmpty() ? jpaPackage : jpaPackage + ".") + "Transient");
+            if (annotation != null) {
+                return true;
+            }
+
+        }
+        return false;
+    }
+
+    public static boolean hasRelation(PsiField field) {
+        if (field.getModifierList() == null) {
+            return false;
+        }
+        for (String jpaPackage : JPA_PACKAGES) {
+            for (String relationAnnotation : RELATIONS_ANNOTATIONS) {
+                PsiAnnotation annotation = field.getModifierList().findAnnotation((jpaPackage.isEmpty() ? jpaPackage : jpaPackage + ".") + relationAnnotation);
+                if (annotation != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static PsiClass findClass(String name, Project project) {
+        if (classes.containsKey(name)) {
+            return classes.get(name);
+        }
+        PsiClass psiClass = JavaPsiFacade.getInstance(project).findClass(name, GlobalSearchScope.allScope(project));
+        classes.put(name, psiClass);
+        return psiClass;
     }
 }
