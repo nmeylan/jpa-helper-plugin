@@ -47,18 +47,22 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         mainPanel.add(namePanel, BorderLayout.NORTH);
 
         // Checkbox panel for fields
-        List<EntityField> fields = Helper.entityFields(psiClass);
-        CheckedTreeNode root = iterateEntityFields(fields);
+        EntityField rootField = Helper.entityFields(psiClass);
+        CheckedTreeNode root = buildCheckboxTree(rootField);
         CheckboxTreeBase.CheckPolicy checkPolicy = new CheckboxTreeBase.CheckPolicy(true, true, true, true);
         checkboxTree = new CheckboxTree(new CheckboxTree.CheckboxTreeCellRenderer() {
             @Override
             public void customizeRenderer(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
                 String text = null;
-                if (node.getUserObject() == null) {
-                    text = psiClass.getName();
+                EntityField userObject = (EntityField) node.getUserObject();
+                if (userObject == null) {
+                    text = "roooot";
+                }
+                else if (userObject.getName() == null) {
+                    text = userObject.getOwnerClass().getName();
                 } else {
-                    text = ((EntityField) node.getUserObject()).getName();
+                    text = userObject.getName();
                 }
                 getTextRenderer().append(text, SimpleTextAttributes.REGULAR_ATTRIBUTES);
             }
@@ -76,13 +80,16 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         return mainPanel;
     }
 
-    public static CheckedTreeNode iterateEntityFields(List<EntityField> fields) {
+    public static CheckedTreeNode buildCheckboxTree(EntityField rootField) {
         CheckedTreeNode root = new CheckedTreeNode(null);
-        iterateEntityFields(fields, root);
+        root.setChecked(false);
+        CheckedTreeNode root_ = new CheckedTreeNode(rootField);
+        root.add(root_);
+        buildCheckboxTree(rootField.getRelationFields(), root_);
         return root;
     }
 
-    private static void iterateEntityFields(List<EntityField> fields, CheckedTreeNode node) {
+    private static void buildCheckboxTree(List<EntityField> fields, CheckedTreeNode node) {
         fields.sort((o1, o2) -> {
             if (o1.getRelationFields() == null && o2.getRelationFields() != null) {
                 return -1;
@@ -94,9 +101,10 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         });
         for (EntityField field : fields) {
             CheckedTreeNode newChild = new CheckedTreeNode(field);
+            newChild.setChecked(false);
             node.add(newChild);
             if (field.getRelationFields() != null) {
-                iterateEntityFields(field.getRelationFields(), newChild);
+                buildCheckboxTree(field.getRelationFields(), newChild);
             }
         }
     }

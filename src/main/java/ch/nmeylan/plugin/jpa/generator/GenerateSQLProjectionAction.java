@@ -60,7 +60,13 @@ public class GenerateSQLProjectionAction extends AnAction {
     }
     private void generateProjectionClass(Project project, PsiClass originalClass, String targetClassName, List<EntityField> selectedFields) {
         for(EntityField field : selectedFields) {
-            System.out.println(field.getName());
+            String out = field.getOwnerClass().getName() + "." + field.getName();
+            EntityField parent = field.getParentRelation();
+            while(parent != null) {
+                out = parent.getOwnerClass().getName() + "." + out;
+                parent = parent.getParentRelation();
+            }
+            System.out.println(out);
         }
         // Logic to generate the projection class goes here
         // This is where you would use PsiClass and PsiElementFactory to create the class with selected fields.

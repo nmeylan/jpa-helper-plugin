@@ -25,11 +25,11 @@ public class Helper {
     private static Set<String> RELATIONS_ANNOTATIONS = Set.of("OneToMany", "OneToOne", "ManyToMany", "ManyToOne");
     private static Set<String> JPA_PACKAGES = Set.of("javax.persistence", "jakarta.persistence", "");
 
-    public static List<EntityField> entityFields(PsiClass psiClass) {
-        List<EntityField> fields = new ArrayList<>();
+    public static EntityField entityFields(PsiClass psiClass) {
         List<String> visitedClasses = new ArrayList<>();
-        collectEntityFields(psiClass, fields, visitedClasses);
-        return fields;
+        EntityField root = new EntityField(null, null, psiClass, null);
+        collectEntityFields(psiClass, root.getMutRelationFields(), visitedClasses, null);
+        return root;
     }
 
     public static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, Integer> callback) {
@@ -54,7 +54,7 @@ public class Helper {
         }
     }
 
-    private static void collectEntityFields(PsiClass psiClass, List<EntityField> fields, List<String> visitedClasses) {
+    private static void collectEntityFields(PsiClass psiClass, List<EntityField> fields, List<String> visitedClasses, EntityField parentRelation) {
         if (psiClass == null || visitedClasses.contains(psiClass.getQualifiedName())) {
             return;
         }
@@ -62,7 +62,7 @@ public class Helper {
         for (PsiField field : psiClass.getFields()) {
             if (!isTransientField(field)) {
                 PsiType fieldType = field.getType();
-                EntityField entityField = new EntityField(field.getName(), fieldType);
+                EntityField entityField = new EntityField(field.getName(), fieldType, psiClass, parentRelation);
                 fields.add(entityField);
                 boolean isCollection = isCollection(fieldType);
                 entityField.setCollection(isCollection);
@@ -76,10 +76,10 @@ public class Helper {
                             genericType = classType.getParameters()[0];
                         }
                         if (genericType != null) {
-                            collectEntityFields(PsiTypesUtil.getPsiClass(genericType), entityField.getMutRelationFields(), visitedClasses);
+                            collectEntityFields(PsiTypesUtil.getPsiClass(genericType), entityField.getMutRelationFields(), visitedClasses, entityField);
                         }
                     } else {
-                        collectEntityFields(PsiTypesUtil.getPsiClass(fieldType), entityField.getMutRelationFields(), visitedClasses);
+                        collectEntityFields(PsiTypesUtil.getPsiClass(fieldType), entityField.getMutRelationFields(), visitedClasses, entityField);
                     }
                 }
             }
