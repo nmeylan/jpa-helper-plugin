@@ -1,5 +1,6 @@
 package ch.nmeylan.plugin.jpa.generator;
 
+import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.openapi.application.PluginPathManager;
 import com.intellij.openapi.application.ReadAction;
@@ -16,38 +17,37 @@ import com.intellij.testFramework.fixtures.DefaultLightProjectDescriptor;
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 import com.intellij.util.ResourceUtil;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureTestCase {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
     private static final String BASE_PATH = "testData/entities/";
-    List<String> a1;
-    Collection<String> a2;
-    Set<String> a3;
-    Map<String, Object> a4;
-    ConcurrentHashMap<String, Object> a5;
-    Queue<String> a6;
+    private Map<String, PsiClass> classes;
 
-    @BeforeEach
+    @BeforeAll
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        classes = new HashMap<>();
+        classes.put("CharacterEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/CharacterEntity.java"))));
+        classes.put("InventoryEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/InventoryEntity.java"))));
+        classes.put("ItemEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/ItemEntity.java"))));
     }
 
-    @AfterEach
+    @AfterAll
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
@@ -125,16 +125,54 @@ public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureT
     }
 
     @Test
-    public void testCollectFieldsForProjection() throws Exception {
-        myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/CharacterEntity.java")));
-        PsiClass psiClass = myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/InventoryEntity.java")));
-        myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/ItemEntity.java")));
+    public void entityFields_shouldBuildAGraphOfEntityField() throws Exception {
+        AtomicReference<EntityField> jobWizard = new AtomicReference<>();
         ReadAction.run(() -> {
-            EntityField root = Helper.entityFields(psiClass);
+            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
             Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+                if (entityField.getName().equals("jobWizard")) {
+                    jobWizard.set(entityField);
+                }
                 System.out.println(entityField);
             });
         });
+        assertThat(jobWizard.get()).isNotNull();
+        assertThat(jobWizard.get().getOwnerClass().getName()).isEqualTo("ItemEntity");
+        assertThat(jobWizard.get().getParentRelation().getName()).isEqualTo("items");
+        assertThat(jobWizard.get().getParentRelation().getOwnerClass().getName()).isEqualTo("InventoryEntity");
+    }
+
+    @Test
+    public void classesToGenerate_shouldBuildAGraphOfClasses() {
+        Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
+        AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
+        ReadAction.run(() -> {
+            ReadAction.run(() -> {
+                EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
+                List<EntityField> selectedFields = new ArrayList<>();
+                Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+                    if (entityField.getName().equals("jobWizard")) {
+                        selectedFields.add(entityField);
+                    }
+                    if (entityField.getName().equals("items")) {
+                        expectationItemsField.set(entityField);
+                    }
+                });
+                classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+
+            });
+        });
+        assertThat(classToGenerates).isNotEmpty();
+        assertThat(classToGenerates.get("fixtures.InventoryEntity")).isNotNull();
+        assertThat(classToGenerates.get("fixtures.ItemEntity")).isNotNull();
+        assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).hasSize(1);
+        assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).contains(expectationItemsField.get());
+        assertThat(classToGenerates.get("fixtures.InventoryEntity").getParentRelation()).isNull();
+        assertThat(classToGenerates.get("fixtures.InventoryEntity").getChildrenRelation()).contains(classToGenerates.get("fixtures.ItemEntity"));
+        assertThat(classToGenerates.get("fixtures.ItemEntity").getFields()).hasSize(1);
+        assertThat(classToGenerates.get("fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
+        assertThat(classToGenerates.get("fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
+        assertThat(classToGenerates.get("fixtures.ItemEntity").getChildrenRelation()).isNull();
     }
 
     private static PsiClass findClassInFile(PsiFile psiFile, String className) {

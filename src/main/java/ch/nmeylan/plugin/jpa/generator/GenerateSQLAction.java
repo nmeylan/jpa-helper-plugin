@@ -18,7 +18,7 @@ import javax.swing.JOptionPane;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class GenerateSQLProjectionAction extends AnAction {
+public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
 
     @Override
@@ -31,13 +31,14 @@ public class GenerateSQLProjectionAction extends AnAction {
             PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
 
             if (psiClass != null && isEntityClass(psiClass)) {
-                ProjectionGeneratorDialog dialog = new ProjectionGeneratorDialog(project, psiClass);
+                EntityField rootField = Helper.entityFields(psiClass);
+                ProjectionGeneratorDialog dialog = new ProjectionGeneratorDialog(project, rootField);
 
                 if (dialog.showAndGet()) {
-                    String targetClassName = dialog.getTargetClassName();
+                    String targetClassName = dialog.getClassNameSuffix();
                     List<EntityField> selectedFields = dialog.getSelectedFields();
 
-                    generateProjectionClass(project, psiClass, targetClassName, selectedFields);
+                    generateProjectionClass(project, psiClass, targetClassName, rootField, selectedFields);
                 }
             } else {
                 JOptionPane.showMessageDialog(null,
@@ -58,16 +59,8 @@ public class GenerateSQLProjectionAction extends AnAction {
         }
         return false;
     }
-    private void generateProjectionClass(Project project, PsiClass originalClass, String targetClassName, List<EntityField> selectedFields) {
-        for(EntityField field : selectedFields) {
-            String out = field.getOwnerClass().getName() + "." + field.getName();
-            EntityField parent = field.getParentRelation();
-            while(parent != null) {
-                out = parent.getOwnerClass().getName() + "." + out;
-                parent = parent.getParentRelation();
-            }
-            System.out.println(out);
-        }
+    private void generateProjectionClass(Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields) {
+        ProjectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields);
         // Logic to generate the projection class goes here
         // This is where you would use PsiClass and PsiElementFactory to create the class with selected fields.
     }

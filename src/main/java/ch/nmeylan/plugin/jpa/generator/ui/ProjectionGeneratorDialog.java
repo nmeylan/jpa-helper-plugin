@@ -1,12 +1,10 @@
 package ch.nmeylan.plugin.jpa.generator.ui;
 
-import ch.nmeylan.plugin.jpa.generator.Helper;
 import ch.nmeylan.plugin.jpa.generator.model.ComboboxGenerateItem;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.psi.PsiClass;
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.CheckboxTreeBase;
 import com.intellij.ui.CheckedTreeNode;
@@ -34,15 +32,15 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ProjectionGeneratorDialog extends DialogWrapper {
-    private final PsiClass psiClass;
-    private JTextField classNameField;
+    private JTextField classNameSuffix;
     private CheckboxTree checkboxTree;
     private JCheckBox innerClass;
+    private EntityField rootField;
 
 
-    public ProjectionGeneratorDialog(Project project, PsiClass psiClass) {
+    public ProjectionGeneratorDialog(Project project, EntityField rootField) {
         super(project);
-        this.psiClass = psiClass;
+        this.rootField = rootField;
         setTitle("Generate SQL");
         setSize(400, getSize().height);
         init(); // Initialize the dialog
@@ -68,8 +66,8 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         gbConstraints.gridx = 1;
         gbConstraints.weightx = 1;
         gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        classNameField = new JTextField("Projection");
-        topFormPanel.add(classNameField, gbConstraints);
+        classNameSuffix = new JTextField("Projection");
+        topFormPanel.add(classNameSuffix, gbConstraints);
         // Inner class checkbox label
         gbConstraints.insets = JBUI.insets(4, 8);
         gbConstraints.gridx = 0;
@@ -128,7 +126,6 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         mainPanel.add(topFormPanel, BorderLayout.NORTH);
 
         // Checkbox panel for fields
-        EntityField rootField = Helper.entityFields(psiClass);
         CheckedTreeNode root = buildCheckboxTree(rootField);
         CheckboxTreeBase.CheckPolicy checkPolicy = new CheckboxTreeBase.CheckPolicy(true, true, true, true);
         checkboxTree = new CheckboxTree(new CheckboxTree.CheckboxTreeCellRenderer() {
@@ -184,8 +181,8 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         }
     }
 
-    public String getTargetClassName() {
-        return classNameField.getText().trim();
+    public String getClassNameSuffix() {
+        return classNameSuffix.getText().trim();
     }
 
     public List<EntityField> getSelectedFields() {
