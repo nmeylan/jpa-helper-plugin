@@ -1,24 +1,35 @@
 package ch.nmeylan.plugin.jpa.generator.ui;
 
 import ch.nmeylan.plugin.jpa.generator.Helper;
+import ch.nmeylan.plugin.jpa.generator.model.ComboboxGenerateItem;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.psi.PsiClass;
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.CheckboxTreeBase;
 import com.intellij.ui.CheckedTreeNode;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.components.JBScrollPane;
+import com.intellij.util.ui.JBUI;
 
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,25 +37,95 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
     private final PsiClass psiClass;
     private JTextField classNameField;
     private CheckboxTree checkboxTree;
+    private JCheckBox innerClass;
 
 
     public ProjectionGeneratorDialog(Project project, PsiClass psiClass) {
         super(project);
         this.psiClass = psiClass;
-        setTitle("Generate SQL Projection");
+        setTitle("Generate SQL");
+        setSize(400, getSize().height);
         init(); // Initialize the dialog
     }
 
     @Override
     protected JComponent createCenterPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
+        JPanel topFormPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbConstraints = new GridBagConstraints();
 
-        // Input field for the target class name
-        JPanel namePanel = new JPanel(new BorderLayout());
-        classNameField = new JTextField(psiClass.getName() + "Projection");
-        namePanel.add(new JLabel("Enter target class name:"), BorderLayout.WEST);
-        namePanel.add(classNameField, BorderLayout.CENTER);
-        mainPanel.add(namePanel, BorderLayout.NORTH);
+        topFormPanel.setBorder(IdeBorderFactory.createBorder());
+        gbConstraints.anchor = GridBagConstraints.WEST;
+        gbConstraints.fill = GridBagConstraints.HORIZONTAL;
+        // Class name label
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 0;
+        gbConstraints.weightx = 0;
+        gbConstraints.gridwidth = 1;
+        topFormPanel.add(new JLabel("Class name suffix"), gbConstraints);
+        // Class name field
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 1;
+        gbConstraints.weightx = 1;
+        gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        classNameField = new JTextField("Projection");
+        topFormPanel.add(classNameField, gbConstraints);
+        // Inner class checkbox label
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 0;
+        gbConstraints.weightx = 0;
+        gbConstraints.gridy = 1;
+        gbConstraints.gridwidth = 1;
+        topFormPanel.add(new JLabel("Inner class"), gbConstraints);
+        // Inner class checkbox
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 1;
+        gbConstraints.weightx = 1;
+        gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        innerClass = new JCheckBox();
+        innerClass.setSelected(true);
+        topFormPanel.add(innerClass, gbConstraints);
+
+        // Inner class checkbox label
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 0;
+        gbConstraints.weightx = 0;
+        gbConstraints.gridy = 2;
+        gbConstraints.gridwidth = 1;
+        topFormPanel.add(new JLabel("Generate"), gbConstraints);
+        // Generate combobox
+        gbConstraints.insets = JBUI.insets(4, 8);
+        gbConstraints.gridx = 1;
+        gbConstraints.weightx = 1;
+        gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        ComboboxGenerateItem[] items = {
+                ComboboxGenerateItem.PROJECTION_CB,
+                ComboboxGenerateItem.PROJECTION_JDBC,
+                ComboboxGenerateItem.PROJECTION_JPQL,
+                ComboboxGenerateItem.PROJECTION_SPRING_JDBC,
+                ComboboxGenerateItem.INSERT_JDBC,
+                ComboboxGenerateItem.INSERT_SPRING_JDBC
+        };
+
+        // Create the combo box
+        JComboBox<ComboboxGenerateItem> comboBox = new ComboBox<>(items);
+        comboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus
+            ) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof ComboboxGenerateItem) {
+                    ComboboxGenerateItem item = (ComboboxGenerateItem) value;
+                    setText(item.text());
+                }
+                return c;
+            }
+        });
+        topFormPanel.add(comboBox, gbConstraints);
+
+        // Add top form to main panel
+        mainPanel.add(topFormPanel, BorderLayout.NORTH);
 
         // Checkbox panel for fields
         EntityField rootField = Helper.entityFields(psiClass);
@@ -58,8 +139,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
                 EntityField userObject = (EntityField) node.getUserObject();
                 if (userObject == null) {
                     text = "roooot";
-                }
-                else if (userObject.getName() == null) {
+                } else if (userObject.getName() == null) {
                     text = userObject.getOwnerClass().getName();
                 } else {
                     text = userObject.getName();
@@ -67,12 +147,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
                 getTextRenderer().append(text, SimpleTextAttributes.REGULAR_ATTRIBUTES);
             }
         }, root, checkPolicy);
-//        Helper.iterateEntityFields(fields, (field, depth) -> {
-//            JCheckBox checkBox = new JCheckBox(field.getName());
-//            checkBox.setBorder(BorderFactory.createEmptyBorder(0, depth * 10, 0, 0));
-//            fieldCheckBoxes.add(checkBox);
-//            fieldsPanel.add(checkBox);
-//        });
+
         JBScrollPane scrollPane = new JBScrollPane(checkboxTree);
         scrollPane.setPreferredSize(new Dimension(300, 200));
         mainPanel.add(scrollPane, BorderLayout.CENTER);

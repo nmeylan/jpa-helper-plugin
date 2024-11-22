@@ -34,12 +34,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureTestCase {
     private static final String BASE_PATH = "testData/entities/";
- List<String> a1;
-                    Collection<String> a2;
-                    Set<String> a3;
-                    Map<String, Object> a4;
-                    ConcurrentHashMap<String, Object> a5;
-                    Queue<String> a6;
+    List<String> a1;
+    Collection<String> a2;
+    Set<String> a3;
+    Map<String, Object> a4;
+    ConcurrentHashMap<String, Object> a5;
+    Queue<String> a6;
+
     @BeforeEach
     @Override
     public void setUp() throws Exception {
@@ -63,9 +64,7 @@ public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureT
             @Override
             public Sdk getSdk() {
                 try {
-                    return JavaSdk.getInstance()
-                            .createJdk(
-                                    "java 1.17", new File(System.getProperty("java.home")).getCanonicalPath(), false);
+                    return JavaSdk.getInstance().createJdk("java 1.17", new File(System.getProperty("java.home")).getCanonicalPath(), false);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -82,8 +81,7 @@ public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureT
     @Test
     public void testJdkClassAvailability() {
         ReadAction.run(() -> {
-            PsiClass stringClass = JavaPsiFacade.getInstance(getProject())
-                    .findClass("java.lang.String", GlobalSearchScope.allScope(getProject()));
+            PsiClass stringClass = JavaPsiFacade.getInstance(getProject()).findClass("java.lang.String", GlobalSearchScope.allScope(getProject()));
             assertNotNull("java.lang.String should be available", stringClass);
         });
     }
@@ -115,10 +113,7 @@ public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureT
         ReadAction.run(() -> {
             PsiClass psiClass = findClassInFile(psiFile, "A");
             HashMap<String, Boolean> actual = new HashMap<>();
-            Map<String, Boolean> expected = Map.of(
-                    "a1", true, "a2", true, "a3", true, "a4", true, "a5", true, "a6", true,
-                    "b1", false, "b2", false, "b3", false
-            );
+            Map<String, Boolean> expected = Map.of("a1", true, "a2", true, "a3", true, "a4", true, "a5", true, "a6", true, "b1", false, "b2", false, "b3", false);
             for (PsiField field : psiClass.getFields()) {
                 actual.put(field.getName(), Helper.isCollection(field.getType()));
             }
@@ -135,9 +130,8 @@ public class CollectFieldsForProjectionTest extends LightJavaCodeInsightFixtureT
         PsiClass psiClass = myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/InventoryEntity.java")));
         myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/ItemEntity.java")));
         ReadAction.run(() -> {
-            List<EntityField> entityFields = Helper.entityFields(psiClass);
-            assertThat(entityFields).isNotEmpty();
-            Helper.iterateEntityFields(entityFields, (entityField, depth) -> {
+            EntityField root = Helper.entityFields(psiClass);
+            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
                 System.out.println(entityField);
             });
         });

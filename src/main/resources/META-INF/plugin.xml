@@ -20,7 +20,7 @@
     <depends>com.intellij.modules.java</depends>
     <actions>
         <action id="ch.nmeylan.plugin.jpa.generator.GenerateSQLProjectionAction"
-                class="ch.nmeylan.plugin.jpa.generator.GenerateSQLProjectionAction" text="JPA Projection"
+                class="ch.nmeylan.plugin.jpa.generator.GenerateSQLProjectionAction" text="SQL Generator"
                 description="Generate model for jpa projection">
             <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>
         </action>
