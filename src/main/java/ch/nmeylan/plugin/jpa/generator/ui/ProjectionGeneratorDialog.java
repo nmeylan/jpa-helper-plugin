@@ -189,4 +189,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         return Arrays.asList(checkboxTree.getCheckedNodes(EntityField.class, null));
     }
 
+    public boolean isInnerClass() {
+        return innerClass.isSelected();
+    }
 }

@@ -18,6 +18,7 @@ intellij {
 }
 
 dependencies {
+
     testImplementation(platform("org.springframework.boot:spring-boot-dependencies:3.2.4"))
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")

@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
@@ -20,12 +21,16 @@ import java.util.stream.Collectors;
 
 public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
+    public GenerateSQLAction() {
+        super("Generate SQL");
+    }
 
     @Override
     public void actionPerformed(AnActionEvent event) {
         Project project = event.getProject();
         Editor editor = event.getData(CommonDataKeys.EDITOR);
         PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
+        ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(project));
 
         if (psiFile != null) {
             PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
@@ -38,7 +43,7 @@ public class GenerateSQLAction extends AnAction {
                     String targetClassName = dialog.getClassNameSuffix();
                     List<EntityField> selectedFields = dialog.getSelectedFields();
 
-                    generateProjectionClass(project, psiClass, targetClassName, rootField, selectedFields);
+                    generateProjectionClass(projectionModelGenerator, project, psiClass, targetClassName, rootField, selectedFields, dialog.isInnerClass());
                 }
             } else {
                 JOptionPane.showMessageDialog(null,
@@ -59,9 +64,8 @@ public class GenerateSQLAction extends AnAction {
         }
         return false;
     }
-    private void generateProjectionClass(Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields) {
-        ProjectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields);
-        // Logic to generate the projection class goes here
-        // This is where you would use PsiClass and PsiElementFactory to create the class with selected fields.
+    private void generateProjectionClass(ProjectionModelGenerator projectionModelGenerator, Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
+        projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass);
+
     }
 }

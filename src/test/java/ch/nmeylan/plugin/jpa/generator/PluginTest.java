@@ -11,6 +11,7 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.testFramework.LightProjectDescriptor;
 import com.intellij.testFramework.fixtures.DefaultLightProjectDescriptor;
@@ -147,20 +148,18 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
         ReadAction.run(() -> {
-            ReadAction.run(() -> {
-                EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
-                List<EntityField> selectedFields = new ArrayList<>();
-                Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
-                    if (entityField.getName().equals("jobWizard")) {
-                        selectedFields.add(entityField);
-                    }
-                    if (entityField.getName().equals("items")) {
-                        expectationItemsField.set(entityField);
-                    }
-                });
-                classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
-
+            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
+            List<EntityField> selectedFields = new ArrayList<>();
+            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+                if (entityField.getName().equals("jobWizard")) {
+                    selectedFields.add(entityField);
+                }
+                if (entityField.getName().equals("items")) {
+                    expectationItemsField.set(entityField);
+                }
             });
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+
         });
         assertThat(classToGenerates).isNotEmpty();
         assertThat(classToGenerates.get("fixtures.InventoryEntity")).isNotNull();
@@ -173,6 +172,32 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         assertThat(classToGenerates.get("fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
         assertThat(classToGenerates.get("fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
         assertThat(classToGenerates.get("fixtures.ItemEntity").getChildrenRelation()).isNull();
+    }
+
+    @Test
+    public void shouldBuildPsiClass() {
+        Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
+        AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
+        ReadAction.run(() -> {
+            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
+            List<EntityField> selectedFields = new ArrayList<>();
+            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+                if (entityField.getName().equals("jobWizard")) {
+                    selectedFields.add(entityField);
+                }
+                if (entityField.getName().equals("items")) {
+                    expectationItemsField.set(entityField);
+                }
+            });
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()));
+            PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("fixtures.InventoryEntity"), true);
+            CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
+            codeStyleManager.reformat(psiClass);
+            System.out.println(psiClass.getText());
+
+        });
+
     }
 
     private static PsiClass findClassInFile(PsiFile psiFile, String className) {
