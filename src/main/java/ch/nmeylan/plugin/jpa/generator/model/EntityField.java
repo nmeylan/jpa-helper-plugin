@@ -1,6 +1,7 @@
 package ch.nmeylan.plugin.jpa.generator.model;
 
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiType;
 
 import java.util.ArrayList;
@@ -9,13 +10,15 @@ import java.util.List;
 public class EntityField {
     private final String name;
     private final PsiType type;
+    private final PsiField psiField;
     private final PsiClass ownerClass;
     private List<EntityField> relationFields;
     private final EntityField parentRelation;
     private boolean isCollection;
 
-    public EntityField(String name, PsiType type, PsiClass ownerClass, EntityField parentRelation) {
+    public EntityField(String name, PsiField psiField, PsiType type, PsiClass ownerClass, EntityField parentRelation) {
         this.name = name;
+        this.psiField = psiField;
         this.type = type;
         this.ownerClass = ownerClass;
         this.parentRelation = parentRelation;
@@ -32,6 +35,10 @@ public class EntityField {
 
     public PsiType getType() {
         return type;
+    }
+
+    public PsiField getPsiField() {
+        return psiField;
     }
 
     public boolean isCollection() {

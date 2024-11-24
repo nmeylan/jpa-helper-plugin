@@ -27,7 +27,7 @@ public class Helper {
 
     public static EntityField entityFields(PsiClass psiClass) {
         List<String> visitedClasses = new ArrayList<>();
-        EntityField root = new EntityField(null, null, psiClass, null);
+        EntityField root = new EntityField(null, null, null, psiClass, null);
         collectEntityFields(psiClass, root.getMutRelationFields(), visitedClasses, null);
         return root;
     }
@@ -62,7 +62,7 @@ public class Helper {
         for (PsiField field : psiClass.getFields()) {
             if (!isTransientField(field)) {
                 PsiType fieldType = field.getType();
-                EntityField entityField = new EntityField(field.getName(), fieldType, psiClass, parentRelation);
+                EntityField entityField = new EntityField(field.getName(), field, fieldType, psiClass, parentRelation);
                 fields.add(entityField);
                 boolean isCollection = isCollection(fieldType);
                 entityField.setCollection(isCollection);

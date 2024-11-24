@@ -5,6 +5,7 @@ import ch.nmeylan.plugin.jpa.generator.ui.ProjectionGeneratorDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
@@ -12,6 +13,7 @@ import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilBase;
 
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
+
     public GenerateSQLAction() {
         super("Generate SQL");
     }
@@ -48,7 +51,7 @@ public class GenerateSQLAction extends AnAction {
             } else {
                 JOptionPane.showMessageDialog(null,
                         String.format("The selected class is not an entity (missing %s annotation).", entityClasses.stream().map(c -> "@" + c).collect(Collectors.joining(" or "))),
-                                              "Error", JOptionPane.ERROR_MESSAGE);
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -64,8 +67,14 @@ public class GenerateSQLAction extends AnAction {
         }
         return false;
     }
+
     private void generateProjectionClass(ProjectionModelGenerator projectionModelGenerator, Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
-        projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass);
+
+        WriteCommandAction.runWriteCommandAction(project, () -> {
+            for (PsiClass classToGenerate : projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass)) {
+                CodeStyleManager.getInstance(project).reformat(classToGenerate);
+            }
+        });
 
     }
 }

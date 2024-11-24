@@ -27,21 +27,9 @@ public class ProjectionModelGenerator {
         this.elementFactory = javaPsiFacade.getElementFactory();
     }
 
-    public String generateProjection(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
+    public List<PsiClass> generateProjection(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
         Map<String, ClassToGenerate> classesToGenerate = classesToGenerate(projectionSuffix, rootField, selectedFields);
-        for (EntityField field : selectedFields) {
-            String out = field.getOwnerClass().getName() + "." + field.getName();
-            EntityField parent = field.getParentRelation();
-            EntityField root = parent;
-            while (parent != null) {
-                out = parent.getOwnerClass().getName() + "." + out;
-                root = parent;
-                parent = parent.getParentRelation();
-            }
-            System.out.println(out);
-            System.out.println("root: " + root.getOwnerClass().getName());
-        }
-        return "";
+        return classesToGenerate.entrySet().stream().map(entry -> psiClassToCreate(entry.getValue(), innerClass)).toList();
     }
 
     public PsiClass psiClassToCreate(ClassToGenerate classToGenerate, boolean innerClass) {
@@ -59,10 +47,14 @@ public class ProjectionModelGenerator {
         psiClass.getExtendsList().add(superClassReference);
         PsiMethod constructor = elementFactory.createConstructor(classToGenerate.getName());
         for (EntityField field : classToGenerate.getFields()) {
+            field.getPsiField().getModifierList().setModifierProperty(PsiModifier.PROTECTED, true);
             constructor.getParameterList().add(elementFactory.createParameter(field.getName(), field.getType()));
             constructor.getBody().add(elementFactory.createStatementFromText("this." + field.getName() + " = " + field.getName() + ";", null));
         }
         psiClass.add(constructor);
+        if (innerClass) {
+            classToGenerate.getExistingClass().add(psiClass);
+        }
         return psiClass;
     }
 
