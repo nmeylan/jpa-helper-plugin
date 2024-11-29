@@ -41,9 +41,10 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
     public ProjectionGeneratorDialog(Project project, EntityField rootField) {
         super(project);
         this.rootField = rootField;
-        setTitle("Generate SQL");
+        setTitle("Generate Projection");
         setSize(400, getSize().height);
         init(); // Initialize the dialog
+        setOKButtonText("Generate");
     }
 
     @Override

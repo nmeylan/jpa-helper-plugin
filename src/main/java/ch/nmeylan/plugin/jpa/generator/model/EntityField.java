@@ -68,7 +68,10 @@ public class EntityField {
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(type.toString()).append(" ").append(name);
+        if (type != null) {
+            sb.append(type.toString()).append(" ");
+        }
+        sb.append(name);
         return sb.toString();
     }
 

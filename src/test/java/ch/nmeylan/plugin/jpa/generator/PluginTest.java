@@ -190,7 +190,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                 }
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
-            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()));
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
             PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("fixtures.InventoryEntity"), true);
             CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
             codeStyleManager.reformat(psiClass);

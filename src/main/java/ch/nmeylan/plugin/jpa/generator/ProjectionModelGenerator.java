@@ -4,6 +4,7 @@ import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.ide.util.PackageUtil;
 import com.intellij.openapi.module.ModuleUtilCore;
+import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaDirectoryService;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
@@ -12,6 +13,7 @@ import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifier;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiUtil;
 
 import java.util.HashMap;
@@ -20,11 +22,13 @@ import java.util.Map;
 
 public class ProjectionModelGenerator {
     private JavaPsiFacade javaPsiFacade;
+    private Project project;
     private PsiElementFactory elementFactory;
 
-    public ProjectionModelGenerator(JavaPsiFacade javaPsiFacade) {
+    public ProjectionModelGenerator(JavaPsiFacade javaPsiFacade, Project project) {
         this.javaPsiFacade = javaPsiFacade;
         this.elementFactory = javaPsiFacade.getElementFactory();
+        this.project = project;
     }
 
     public List<PsiClass> generateProjection(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
@@ -52,6 +56,8 @@ public class ProjectionModelGenerator {
             constructor.getBody().add(elementFactory.createStatementFromText("this." + field.getName() + " = " + field.getName() + ";", null));
         }
         psiClass.add(constructor);
+
+        CodeStyleManager.getInstance(project).reformat(psiClass);
         if (innerClass) {
             classToGenerate.getExistingClass().add(psiClass);
         }

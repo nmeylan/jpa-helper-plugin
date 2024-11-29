@@ -2,6 +2,7 @@ package ch.nmeylan.plugin.jpa.generator;
 
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import ch.nmeylan.plugin.jpa.generator.ui.ProjectionGeneratorDialog;
+import ch.nmeylan.plugin.jpa.generator.ui.SqlGeneratorDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -13,7 +14,6 @@ import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiModifierList;
-import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilBase;
 
@@ -25,7 +25,7 @@ public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
 
     public GenerateSQLAction() {
-        super("Generate SQL");
+        super("Generate Projection DTO");
     }
 
     @Override
@@ -33,7 +33,7 @@ public class GenerateSQLAction extends AnAction {
         Project project = event.getProject();
         Editor editor = event.getData(CommonDataKeys.EDITOR);
         PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
-        ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(project));
+        ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(project), project);
 
         if (psiFile != null) {
             PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
@@ -47,6 +47,8 @@ public class GenerateSQLAction extends AnAction {
                     List<EntityField> selectedFields = dialog.getSelectedFields();
 
                     generateProjectionClass(projectionModelGenerator, project, psiClass, targetClassName, rootField, selectedFields, dialog.isInnerClass());
+                    SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project);
+                    sqlGeneratorDialog.show();
                 }
             } else {
                 JOptionPane.showMessageDialog(null,
@@ -69,11 +71,8 @@ public class GenerateSQLAction extends AnAction {
     }
 
     private void generateProjectionClass(ProjectionModelGenerator projectionModelGenerator, Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
-
         WriteCommandAction.runWriteCommandAction(project, () -> {
-            for (PsiClass classToGenerate : projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass)) {
-                CodeStyleManager.getInstance(project).reformat(classToGenerate);
-            }
+           projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass);
         });
 
     }
