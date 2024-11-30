@@ -4,6 +4,7 @@ import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.openapi.application.PluginPathManager;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.projectRoots.JavaSdk;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.psi.JavaPsiFacade;
@@ -46,6 +47,14 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         classes.put("CharacterEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/CharacterEntity.java"))));
         classes.put("InventoryEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/InventoryEntity.java"))));
         classes.put("ItemEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/ItemEntity.java"))));
+        classes.put("AuthorEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/AuthorEntity.java"))));
+        classes.put("EditorEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/EditorEntity.java"))));
+        classes.put("BookDetailsEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/BookDetailsEntity.java"))));
+        classes.put("BookEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/BookEntity.java"))));
+        classes.put("CategoryEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/CategoryEntity.java"))));
+        classes.put("CustomerEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/CustomerEntity.java"))));
+        classes.put("OrderEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/OrderEntity.java"))));
+        classes.put("OrderItemEntity", myFixture.addClass(ResourceUtil.loadText(getClass().getClassLoader().getResourceAsStream("fixtures/bookstore/OrderItemEntity.java"))));
     }
 
     @AfterAll
@@ -178,7 +187,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
     public void shouldBuildPsiClass() {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
-        ReadAction.run(() -> {
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
             EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
             Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
@@ -195,7 +204,43 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
             CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
             codeStyleManager.reformat(psiClass);
             System.out.println(psiClass.getText());
+        });
+    }
 
+    @Test
+    public void projectionJPACriteriaBuilder() {
+        Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
+            EntityField root = Helper.entityFields(classes.get("BookEntity"));
+            List<EntityField> selectedFields = new ArrayList<>();
+            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+                if (entityField.getOwnerClass().getName().equals("BookEntity")) {
+                    if (entityField.getName().equals("id") || entityField.getName().equals("title") || entityField.getName().equals("isbn") || entityField.getName().equals("price") || entityField.getName().equals("author")) {
+                        selectedFields.add(entityField);
+                    }
+                }
+                if (entityField.getOwnerClass().getName().equals("AuthorEntity")) {
+                    if (entityField.getName().equals("firstName") || entityField.getName().equals("lastName") || entityField.getName().equals("editor")) {
+                        selectedFields.add(entityField);
+                    }
+                }
+                if (entityField.getOwnerClass().getName().equals("EditorEntity")) {
+                    if (entityField.getName().equals("name") || entityField.getName().equals("email")) {
+                        selectedFields.add(entityField);
+                    }
+                }
+            });
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
+            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
+            for (Map.Entry<String, ClassToGenerate> entry : classToGenerates.entrySet()) {
+                PsiClass psiClass = projectionModelGenerator.psiClassToCreate(entry.getValue(), true);
+                CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
+                codeStyleManager.reformat(psiClass);
+                System.out.println(psiClass.getText());
+            }
+            String generated = projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("ch.nmeylan.blog.example.bookstore.BookEntity"));
+            System.out.println(generated);
         });
 
     }

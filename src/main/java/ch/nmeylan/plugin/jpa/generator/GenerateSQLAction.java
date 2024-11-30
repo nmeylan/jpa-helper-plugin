@@ -1,5 +1,6 @@
 package ch.nmeylan.plugin.jpa.generator;
 
+import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import ch.nmeylan.plugin.jpa.generator.ui.ProjectionGeneratorDialog;
 import ch.nmeylan.plugin.jpa.generator.ui.SqlGeneratorDialog;
@@ -19,6 +20,7 @@ import com.intellij.psi.util.PsiUtilBase;
 
 import javax.swing.JOptionPane;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class GenerateSQLAction extends AnAction {
@@ -43,10 +45,14 @@ public class GenerateSQLAction extends AnAction {
                 ProjectionGeneratorDialog dialog = new ProjectionGeneratorDialog(project, rootField);
 
                 if (dialog.showAndGet()) {
-                    String targetClassName = dialog.getClassNameSuffix();
+                    String suffix = dialog.getClassNameSuffix();
                     List<EntityField> selectedFields = dialog.getSelectedFields();
 
-                    generateProjectionClass(projectionModelGenerator, project, psiClass, targetClassName, rootField, selectedFields, dialog.isInnerClass());
+                    Map<String, ClassToGenerate> classesToGenerate = ProjectionModelGenerator.classesToGenerate(suffix, rootField, selectedFields);
+                    WriteCommandAction.runWriteCommandAction(project, () -> {
+                       projectionModelGenerator.generateProjection(classesToGenerate, dialog.isInnerClass());
+                    });
+
                     SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project);
                     sqlGeneratorDialog.show();
                 }
@@ -68,12 +74,5 @@ public class GenerateSQLAction extends AnAction {
             }
         }
         return false;
-    }
-
-    private void generateProjectionClass(ProjectionModelGenerator projectionModelGenerator, Project project, PsiClass originalClass, String classSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
-        WriteCommandAction.runWriteCommandAction(project, () -> {
-           projectionModelGenerator.generateProjection(classSuffix, rootField, selectedFields, innerClass);
-        });
-
     }
 }

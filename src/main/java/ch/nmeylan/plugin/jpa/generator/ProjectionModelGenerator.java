@@ -19,6 +19,7 @@ import com.intellij.psi.util.PsiUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ProjectionModelGenerator {
     private JavaPsiFacade javaPsiFacade;
@@ -33,6 +34,10 @@ public class ProjectionModelGenerator {
 
     public List<PsiClass> generateProjection(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
         Map<String, ClassToGenerate> classesToGenerate = classesToGenerate(projectionSuffix, rootField, selectedFields);
+        return generateProjection(classesToGenerate, innerClass);
+    }
+
+    public List<PsiClass> generateProjection(Map<String, ClassToGenerate> classesToGenerate, boolean innerClass) {
         return classesToGenerate.entrySet().stream().map(entry -> psiClassToCreate(entry.getValue(), innerClass)).toList();
     }
 
@@ -56,7 +61,6 @@ public class ProjectionModelGenerator {
             constructor.getBody().add(elementFactory.createStatementFromText("this." + field.getName() + " = " + field.getName() + ";", null));
         }
         psiClass.add(constructor);
-
         CodeStyleManager.getInstance(project).reformat(psiClass);
         if (innerClass) {
             classToGenerate.getExistingClass().add(psiClass);
@@ -79,7 +83,14 @@ public class ProjectionModelGenerator {
             while (parent != null) {
                 ClassToGenerate parentClass = getClassToGenerate(projectionSuffix, parent, classesToGenerate);
                 classToGenerate.addParentRelation(parentClass);
-                parentClass.addChildRelation(classToGenerate);
+                if (parentClass.addChildRelation(classToGenerate)) {
+                    Optional<EntityField> fieldOfType = parentClass.getFieldOfType(classToGenerate.getExistingClass());
+                    if (fieldOfType.isPresent()) {
+                        classToGenerate.setFieldNameForInParentRelation(fieldOfType.get().getName());
+                    } else {
+                        // TODO handle
+                    }
+                }
                 parentClass.addField(parent);
                 parent = parent.getParentRelation();
                 classToGenerate = parentClass;
