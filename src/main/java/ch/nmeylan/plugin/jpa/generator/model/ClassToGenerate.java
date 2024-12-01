@@ -3,6 +3,7 @@ package ch.nmeylan.plugin.jpa.generator.model;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.util.PsiTypesUtil;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 
@@ -12,8 +13,7 @@ public class ClassToGenerate {
     private PsiClass existingClass;
     private final LinkedHashSet<EntityField> fields;
     private ClassToGenerate parentRelation;
-    private String joinNameForParent;
-    private LinkedHashSet<ClassToGenerate> childrenRelation;
+    private HashMap<String, ClassToGenerate> childrenRelation;
 
 
     public ClassToGenerate(String name, PsiClass existingClass) {
@@ -52,7 +52,7 @@ public class ClassToGenerate {
         return parentRelation;
     }
 
-    public LinkedHashSet<ClassToGenerate> getChildrenRelation() {
+    public HashMap<String, ClassToGenerate> getChildrenRelation() {
         return childrenRelation;
     }
 
@@ -61,33 +61,18 @@ public class ClassToGenerate {
     }
 
     public String getJoinNameForParent() {
-        return joinNameForParent;
+        return fieldNameForInParentRelation + "Join";
     }
 
     public void addParentRelation(ClassToGenerate parentRelation) {
         this.parentRelation = parentRelation;
-        String nameWithoutEntity = name.substring(0, name.indexOf("Entity"));
-        this.joinNameForParent = Character.toLowerCase(nameWithoutEntity.charAt(0)) + nameWithoutEntity.substring(1)+ "Join";
     }
 
-    public boolean addChildRelation(ClassToGenerate childRelation) {
+    public boolean addChildRelation(String fieldName, ClassToGenerate childRelation) {
         if (childrenRelation == null) {
-            childrenRelation = new LinkedHashSet<>();
+            childrenRelation = new HashMap<>();
         }
-       return childrenRelation.add(childRelation);
+       return childrenRelation.put(fieldName, childRelation) == null;
     }
 
-//    public String generateClass() {
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("public ").append(name).append("(");
-//        Iterator<EntityField> iterator = fields.iterator();
-//        while (iterator.hasNext()) {
-//            EntityField field = iterator.next();
-//            sb.append(field.getType().getPresentableText()).append(" ").append(field.getName());
-//            if (iterator.hasNext()) {
-//                sb.append(", ");
-//            }
-//        }
-//        sb.append(")");
-//    }
 }

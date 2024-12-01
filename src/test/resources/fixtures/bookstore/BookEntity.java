@@ -21,6 +21,10 @@ public class BookEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private AuthorEntity author;
 
+    @ManyToOne
+    @JoinColumn(name = "secondary_author_id", nullable = false)
+    private AuthorEntity secondaryAuthor;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "details_id", referencedColumnName = "id")
     private BookDetailsEntity details;

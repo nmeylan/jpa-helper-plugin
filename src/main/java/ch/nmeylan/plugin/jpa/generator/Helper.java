@@ -32,24 +32,24 @@ public class Helper {
         return root;
     }
 
-    public static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, Integer> callback) {
-        iterateEntityFields(fields, callback, 0);
+    public static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, String> callback) {
+        iterateEntityFields(fields, callback, "root");
     }
 
-    private static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, Integer> callback, int depth) {
+    private static void iterateEntityFields(List<EntityField> fields, BiConsumer<EntityField, String> callback, String path) {
         fields.sort((o1, o2) -> {
-            if (o1.getRelationFields() == null && o2.getRelationFields() != null) {
+            if (o1.getChildrenFields() == null && o2.getChildrenFields() != null) {
                 return -1;
             }
-            if (o1.getRelationFields() != null && o2.getRelationFields() == null) {
+            if (o1.getChildrenFields() != null && o2.getChildrenFields() == null) {
                 return 1;
             }
             return 0;
         });
         for (EntityField field : fields) {
-            callback.accept(field, depth);
-            if (field.getRelationFields() != null) {
-                iterateEntityFields(field.getRelationFields(), callback, depth + 1);
+            callback.accept(field, path);
+            if (field.getChildrenFields() != null) {
+                iterateEntityFields(field.getChildrenFields(), callback, path + "." + field.getName());
             }
         }
     }
@@ -66,7 +66,10 @@ public class Helper {
                 fields.add(entityField);
                 boolean isCollection = isCollection(fieldType);
                 entityField.setCollection(isCollection);
-                if (hasRelation(field)) {
+                if (isARelation(field)) {
+                    entityField.setRelation(true);
+                    // Here we need a new instance of visited for child field in order to be able to visit same class multiple time but we avoid creating infinite loop
+                    ArrayList<String> childVisitedClass = new ArrayList<>(visitedClasses);
                     if (isCollection) {
                         PsiClassType classType = (PsiClassType) fieldType;
                         PsiType genericType = null;
@@ -76,10 +79,10 @@ public class Helper {
                             genericType = classType.getParameters()[0];
                         }
                         if (genericType != null) {
-                            collectEntityFields(PsiTypesUtil.getPsiClass(genericType), entityField.getMutRelationFields(), visitedClasses, entityField);
+                            collectEntityFields(PsiTypesUtil.getPsiClass(genericType), entityField.getMutRelationFields(), childVisitedClass, entityField);
                         }
                     } else {
-                        collectEntityFields(PsiTypesUtil.getPsiClass(fieldType), entityField.getMutRelationFields(), visitedClasses, entityField);
+                        collectEntityFields(PsiTypesUtil.getPsiClass(fieldType), entityField.getMutRelationFields(), childVisitedClass, entityField);
                     }
                 }
             }
@@ -122,7 +125,7 @@ public class Helper {
         return false;
     }
 
-    public static boolean hasRelation(PsiField field) {
+    public static boolean isARelation(PsiField field) {
         if (field.getModifierList() == null) {
             return false;
         }

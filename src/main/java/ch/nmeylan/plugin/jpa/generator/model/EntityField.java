@@ -12,17 +12,19 @@ public class EntityField {
     private final PsiType type;
     private final PsiField psiField;
     private final PsiClass ownerClass;
-    private List<EntityField> relationFields;
-    private final EntityField parentRelation;
+    private List<EntityField> childrenFields;
+    private final EntityField parentField;
     private boolean isCollection;
+    private boolean isRelation;
 
-    public EntityField(String name, PsiField psiField, PsiType type, PsiClass ownerClass, EntityField parentRelation) {
+    public EntityField(String name, PsiField psiField, PsiType type, PsiClass ownerClass, EntityField parentField) {
         this.name = name;
         this.psiField = psiField;
         this.type = type;
         this.ownerClass = ownerClass;
-        this.parentRelation = parentRelation;
+        this.parentField = parentField;
         isCollection = false;
+        isRelation = false;
     }
 
     public String getName() {
@@ -45,24 +47,28 @@ public class EntityField {
         return isCollection;
     }
 
+    public boolean isRelation() {
+        return isRelation;
+    }
+
     public EntityField setCollection(boolean collection) {
         isCollection = collection;
         return this;
     }
 
     public List<EntityField> getMutRelationFields() {
-        if (relationFields == null) {
-            relationFields = new ArrayList<>();
+        if (childrenFields == null) {
+            childrenFields = new ArrayList<>();
         }
-        return relationFields;
+        return childrenFields;
     }
 
-    public List<EntityField> getRelationFields() {
-        return relationFields;
+    public List<EntityField> getChildrenFields() {
+        return childrenFields;
     }
 
-    public EntityField getParentRelation() {
-        return parentRelation;
+    public EntityField getParentField() {
+        return parentField;
     }
 
 
@@ -75,4 +81,7 @@ public class EntityField {
         return sb.toString();
     }
 
+    public void setRelation(boolean relation) {
+        isRelation = relation;
+    }
 }

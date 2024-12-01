@@ -45,13 +45,23 @@ public class ProjectionSQLGenerator {
     }
 
     private static void generateJoin(ClassToGenerate root, StringBuilder code, String joinName) {
-        for (ClassToGenerate relation : root.getChildrenRelation()) {
+        if (root.getChildrenRelation() == null) {
+            return;
+        }
+        for (ClassToGenerate relation : root.getChildrenRelation().values()) {
+            String varJoinName =  relation.getJoinNameForParent();
+            ClassToGenerate parent = relation.getParentRelation();
+            while (parent != null) {
+                varJoinName = (parent.getFieldNameForInParentRelation() != null ? parent.getFieldNameForInParentRelation() + Character.toUpperCase(varJoinName.charAt(0)) + varJoinName.substring(1) : ""  + varJoinName) ;
+                parent = parent.getParentRelation();
+            }
+
             code.append(INDENT).append("Join<").append(root.getExistingClass().getName()).append(", ").append(relation.getExistingClass().getName()).append("> ")
-                    .append(relation.getJoinNameForParent()).append(" = ")
+                    .append(varJoinName).append(" = ")
                     .append(joinName).append(".join(\"").append(relation.getFieldNameForInParentRelation()).append("\");").append(EOL);
 
             if (relation.getChildrenRelation() != null) {
-                generateJoin(relation, code, relation.getJoinNameForParent());
+                generateJoin(relation, code, varJoinName);
             }
         }
     }

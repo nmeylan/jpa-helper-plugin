@@ -19,7 +19,6 @@ import com.intellij.psi.util.PsiUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class ProjectionModelGenerator {
     private JavaPsiFacade javaPsiFacade;
@@ -70,37 +69,34 @@ public class ProjectionModelGenerator {
 
     public static Map<String, ClassToGenerate> classesToGenerate(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields) {
         Map<String, ClassToGenerate> classesToGenerate = new HashMap<>();
-
-        Helper.iterateEntityFields(rootField.getRelationFields(), (field, _depth) -> {
+        Helper.iterateEntityFields(rootField.getChildrenFields(), (field, path) -> {
             if (!selectedFields.contains(field)) {
                 return;
             }
             ClassToGenerate classToGenerate = null;
-            classToGenerate = getClassToGenerate(projectionSuffix, field, classesToGenerate);
+            String key = path + "-" + field.getOwnerClass().getQualifiedName();
+            classToGenerate = getClassToGenerate(key, projectionSuffix, field, classesToGenerate);
             classToGenerate.addField(field);
 
-            EntityField parent = field.getParentRelation();
-            while (parent != null) {
-                ClassToGenerate parentClass = getClassToGenerate(projectionSuffix, parent, classesToGenerate);
+            EntityField parent = field.getParentField();
+            if (parent != null) {
+                key = path.substring(0, path.lastIndexOf(".")) + "-" + parent.getOwnerClass().getQualifiedName();
+                ClassToGenerate parentClass = getClassToGenerate(key, projectionSuffix, parent, classesToGenerate);
+
                 classToGenerate.addParentRelation(parentClass);
-                if (parentClass.addChildRelation(classToGenerate)) {
-                    Optional<EntityField> fieldOfType = parentClass.getFieldOfType(classToGenerate.getExistingClass());
-                    if (fieldOfType.isPresent()) {
-                        classToGenerate.setFieldNameForInParentRelation(fieldOfType.get().getName());
-                    } else {
-                        // TODO handle
-                    }
+                if (parentClass.addChildRelation(parent.getName(), classToGenerate)) {
+                   classToGenerate.setFieldNameForInParentRelation(parent.getName());
                 }
                 parentClass.addField(parent);
-                parent = parent.getParentRelation();
+                parent = parent.getParentField();
                 classToGenerate = parentClass;
             }
         });
         return classesToGenerate;
     }
 
-    private static ClassToGenerate getClassToGenerate(String projectionSuffix, EntityField field, Map<String, ClassToGenerate> classesToGenerate) {
-        String key = field.getOwnerClass().getQualifiedName();
+    private static ClassToGenerate getClassToGenerate(String key, String projectionSuffix, EntityField field, Map<String, ClassToGenerate> classesToGenerate) {
+
         ClassToGenerate classToGenerate;
         if (!classesToGenerate.containsKey(key)) {
             classToGenerate = new ClassToGenerate(field.getOwnerClass().getName() + projectionSuffix, field.getOwnerClass());

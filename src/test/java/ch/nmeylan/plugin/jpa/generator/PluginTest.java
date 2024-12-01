@@ -139,7 +139,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         AtomicReference<EntityField> jobWizard = new AtomicReference<>();
         ReadAction.run(() -> {
             EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
-            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     jobWizard.set(entityField);
                 }
@@ -148,8 +148,8 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         });
         assertThat(jobWizard.get()).isNotNull();
         assertThat(jobWizard.get().getOwnerClass().getName()).isEqualTo("ItemEntity");
-        assertThat(jobWizard.get().getParentRelation().getName()).isEqualTo("items");
-        assertThat(jobWizard.get().getParentRelation().getOwnerClass().getName()).isEqualTo("InventoryEntity");
+        assertThat(jobWizard.get().getParentField().getName()).isEqualTo("items");
+        assertThat(jobWizard.get().getParentField().getOwnerClass().getName()).isEqualTo("InventoryEntity");
     }
 
     @Test
@@ -159,7 +159,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         ReadAction.run(() -> {
             EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     selectedFields.add(entityField);
                 }
@@ -176,7 +176,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).hasSize(1);
         assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).contains(expectationItemsField.get());
         assertThat(classToGenerates.get("fixtures.InventoryEntity").getParentRelation()).isNull();
-        assertThat(classToGenerates.get("fixtures.InventoryEntity").getChildrenRelation()).contains(classToGenerates.get("fixtures.ItemEntity"));
+        assertThat(classToGenerates.get("fixtures.InventoryEntity").getChildrenRelation().values()).contains(classToGenerates.get("fixtures.ItemEntity"));
         assertThat(classToGenerates.get("fixtures.ItemEntity").getFields()).hasSize(1);
         assertThat(classToGenerates.get("fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
         assertThat(classToGenerates.get("fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
@@ -190,7 +190,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
             EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     selectedFields.add(entityField);
                 }
@@ -200,7 +200,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
             ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
-            PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("fixtures.InventoryEntity"), true);
+            PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("root-fixtures.InventoryEntity"), true);
             CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
             codeStyleManager.reformat(psiClass);
             System.out.println(psiClass.getText());
@@ -213,9 +213,9 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
             EntityField root = Helper.entityFields(classes.get("BookEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getRelationFields(), (entityField, depth) -> {
+            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getOwnerClass().getName().equals("BookEntity")) {
-                    if (entityField.getName().equals("id") || entityField.getName().equals("title") || entityField.getName().equals("isbn") || entityField.getName().equals("price") || entityField.getName().equals("author")) {
+                    if (entityField.getName().equals("id") || entityField.getName().equals("title") || entityField.getName().equals("isbn") || entityField.getName().equals("price") || entityField.getName().equals("author") || entityField.getName().equals("secondaryAuthor")) {
                         selectedFields.add(entityField);
                     }
                 }
@@ -239,7 +239,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                 codeStyleManager.reformat(psiClass);
                 System.out.println(psiClass.getText());
             }
-            String generated = projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("ch.nmeylan.blog.example.bookstore.BookEntity"));
+            String generated = projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"));
             System.out.println(generated);
         });
 

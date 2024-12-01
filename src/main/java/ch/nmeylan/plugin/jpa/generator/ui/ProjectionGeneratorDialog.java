@@ -158,16 +158,16 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         root.setChecked(false);
         CheckedTreeNode root_ = new CheckedTreeNode(rootField);
         root.add(root_);
-        buildCheckboxTree(rootField.getRelationFields(), root_);
+        buildCheckboxTree(rootField.getChildrenFields(), root_);
         return root;
     }
 
     private static void buildCheckboxTree(List<EntityField> fields, CheckedTreeNode node) {
         fields.sort((o1, o2) -> {
-            if (o1.getRelationFields() == null && o2.getRelationFields() != null) {
+            if (o1.getChildrenFields() == null && o2.getChildrenFields() != null) {
                 return -1;
             }
-            if (o1.getRelationFields() != null && o2.getRelationFields() == null) {
+            if (o1.getChildrenFields() != null && o2.getChildrenFields() == null) {
                 return 1;
             }
             return 0;
@@ -176,8 +176,8 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
             CheckedTreeNode newChild = new CheckedTreeNode(field);
             newChild.setChecked(false);
             node.add(newChild);
-            if (field.getRelationFields() != null) {
-                buildCheckboxTree(field.getRelationFields(), newChild);
+            if (field.getChildrenFields() != null) {
+                buildCheckboxTree(field.getChildrenFields(), newChild);
             }
         }
     }
