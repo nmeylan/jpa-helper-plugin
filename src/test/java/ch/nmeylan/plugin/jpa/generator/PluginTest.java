@@ -167,7 +167,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                     expectationItemsField.set(entityField);
                 }
             });
-            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
 
         });
         assertThat(classToGenerates).isNotEmpty();
@@ -198,7 +198,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                     expectationItemsField.set(entityField);
                 }
             });
-            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
             ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
             PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("root-fixtures.InventoryEntity"), true);
             CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
@@ -230,7 +230,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                     }
                 }
             });
-            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields));
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
             ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
             ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
             for (Map.Entry<String, ClassToGenerate> entry : classToGenerates.entrySet()) {

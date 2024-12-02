@@ -48,7 +48,7 @@ public class GenerateSQLAction extends AnAction {
                     String suffix = dialog.getClassNameSuffix();
                     List<EntityField> selectedFields = dialog.getSelectedFields();
 
-                    Map<String, ClassToGenerate> classesToGenerate = ProjectionModelGenerator.classesToGenerate(suffix, rootField, selectedFields);
+                    Map<String, ClassToGenerate> classesToGenerate = ProjectionModelGenerator.classesToGenerate(suffix, rootField, selectedFields, dialog.isInnerClass());
                     WriteCommandAction.runWriteCommandAction(project, () -> {
                        projectionModelGenerator.generateProjection(classesToGenerate, dialog.isInnerClass());
                     });

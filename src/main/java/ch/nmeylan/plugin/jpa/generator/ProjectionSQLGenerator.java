@@ -24,37 +24,52 @@ public class ProjectionSQLGenerator {
     public String generateJPACriteriaBuilderQuery(ClassToGenerate root) {
 
         StringBuilder code = new StringBuilder();
-        code.append("public List<").append(root.getName()).append(">").append(" fetchAll() {").append(EOL);
+        code.append("public List<").append(root.getImportableName()).append(">").append(" fetchAll() {").append(EOL);
         code.append(INDENT).append("CriteriaBuilder cb = entityManager.getCriteriaBuilder();").append(EOL);
-        code.append(INDENT).append("CriteriaQuery<").append(root.getName()).append("> query = cb.createQuery(" + root.getName() + ".class);").append(EOL2);
-        code.append(INDENT).append("Root<").append(root.getExistingClass().getName()).append("> root = query.getRoot();").append(EOL2);
+        code.append(INDENT).append("CriteriaQuery<").append(root.getImportableName()).append("> query = cb.createQuery(" + root.getImportableName() + ".class);").append(EOL2);
+        code.append(INDENT).append("Root<").append(root.getExistingClass().getName()).append("> root = query.from(").append(root.getExistingClass().getName()).append(".class);").append(EOL2);
 
         generateJoin(root, code, "root");
         code.append(EOL);
         code.append(INDENT).append("query.select(cb.construct(").append(EOL);
-        code.append(INDENT2).append(root.getName()).append(".class").append(",").append(EOL);
-        for (EntityField field : root.getFields()) {
-            code.append(INDENT2).append("root.").append(field.getName()).append(",").append(EOL);
-            // TODO: handle nested relation
-        }
-        code.delete(code.length() - 2, code.length() - 1);
+        code.append(INDENT2).append(root.getImportableName()).append(".class").append(",").append(EOL);
+        select(root, code, "root", 1);
         code.append(INDENT).append("));").append(EOL);
-        code.append(INDENT).append("entityManager.createQuery(query).getResultList()").append(EOL);
+        code.append(INDENT).append("return entityManager.createQuery(query).getResultList();").append(EOL);
         code.append("}");
         return code.toString();
     }
 
-    private static void generateJoin(ClassToGenerate root, StringBuilder code, String joinName) {
+    private static void select(ClassToGenerate classToGenerate, StringBuilder code, String joinVariableName, int level) {
+        String indentation = INDENT;
+        for (int i = 0; i < level; i++) {
+            indentation += INDENT;
+        }
+        for (EntityField field : classToGenerate.getFields()) {
+            if (field.isRelation()) {
+                ClassToGenerate relation = classToGenerate.getChildrenRelation().get(field.getName());
+                code.append(indentation).append("cb.construct(").append(relation.getImportableName()).append(".class").append(",").append(EOL);
+                select(relation, code, relation.getJoinVariableName(), level + 1);
+                code.append(indentation).append("),").append(EOL);
+            } else {
+                code.append(indentation).append(joinVariableName).append(".get(\"").append(field.getName()).append("\"),").append(EOL);
+            }
+        }
+        code.delete(code.length() - 2, code.length() - 1);
+    }
+
+    private void generateJoin(ClassToGenerate root, StringBuilder code, String joinName) {
         if (root.getChildrenRelation() == null) {
             return;
         }
         for (ClassToGenerate relation : root.getChildrenRelation().values()) {
-            String varJoinName =  relation.getJoinNameForParent();
+            String varJoinName = relation.getJoinNameForParent();
             ClassToGenerate parent = relation.getParentRelation();
             while (parent != null) {
-                varJoinName = (parent.getFieldNameForInParentRelation() != null ? parent.getFieldNameForInParentRelation() + Character.toUpperCase(varJoinName.charAt(0)) + varJoinName.substring(1) : ""  + varJoinName) ;
+                varJoinName = (parent.getFieldNameForInParentRelation() != null ? parent.getFieldNameForInParentRelation() + Character.toUpperCase(varJoinName.charAt(0)) + varJoinName.substring(1) : "" + varJoinName);
                 parent = parent.getParentRelation();
             }
+            relation.setJoinVariableName(varJoinName);
 
             code.append(INDENT).append("Join<").append(root.getExistingClass().getName()).append(", ").append(relation.getExistingClass().getName()).append("> ")
                     .append(varJoinName).append(" = ")

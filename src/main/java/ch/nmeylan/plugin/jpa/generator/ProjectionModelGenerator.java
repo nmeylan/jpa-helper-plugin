@@ -17,8 +17,10 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiUtil;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ProjectionModelGenerator {
     private JavaPsiFacade javaPsiFacade;
@@ -32,12 +34,22 @@ public class ProjectionModelGenerator {
     }
 
     public List<PsiClass> generateProjection(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
-        Map<String, ClassToGenerate> classesToGenerate = classesToGenerate(projectionSuffix, rootField, selectedFields);
+        Map<String, ClassToGenerate> classesToGenerate = classesToGenerate(projectionSuffix, rootField, selectedFields, innerClass);
         return generateProjection(classesToGenerate, innerClass);
     }
 
     public List<PsiClass> generateProjection(Map<String, ClassToGenerate> classesToGenerate, boolean innerClass) {
-        return classesToGenerate.entrySet().stream().map(entry -> psiClassToCreate(entry.getValue(), innerClass)).toList();
+        HashSet<String> classesSignature = new HashSet<>();
+        return classesToGenerate.entrySet().stream()
+                .filter(entry -> {
+                    String classSignature = entry.getValue().getName() + entry.getValue().getFields().stream().map(EntityField::getName).collect(Collectors.joining());
+                    if (classesSignature.contains(classSignature)) {
+                        return false;
+                    }
+                    classesSignature.add(classSignature);
+                    return true;
+                })
+                .map(entry -> psiClassToCreate(entry.getValue(), innerClass)).toList();
     }
 
     public PsiClass psiClassToCreate(ClassToGenerate classToGenerate, boolean innerClass) {
@@ -67,7 +79,7 @@ public class ProjectionModelGenerator {
         return psiClass;
     }
 
-    public static Map<String, ClassToGenerate> classesToGenerate(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields) {
+    public static Map<String, ClassToGenerate> classesToGenerate(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
         Map<String, ClassToGenerate> classesToGenerate = new HashMap<>();
         Helper.iterateEntityFields(rootField.getChildrenFields(), (field, path) -> {
             if (!selectedFields.contains(field)) {
@@ -75,13 +87,13 @@ public class ProjectionModelGenerator {
             }
             ClassToGenerate classToGenerate = null;
             String key = path + "-" + field.getOwnerClass().getQualifiedName();
-            classToGenerate = getClassToGenerate(key, projectionSuffix, field, classesToGenerate);
+            classToGenerate = getClassToGenerate(key, projectionSuffix, field, classesToGenerate, innerClass);
             classToGenerate.addField(field);
 
             EntityField parent = field.getParentField();
             if (parent != null) {
                 key = path.substring(0, path.lastIndexOf(".")) + "-" + parent.getOwnerClass().getQualifiedName();
-                ClassToGenerate parentClass = getClassToGenerate(key, projectionSuffix, parent, classesToGenerate);
+                ClassToGenerate parentClass = getClassToGenerate(key, projectionSuffix, parent, classesToGenerate, innerClass);
 
                 classToGenerate.addParentRelation(parentClass);
                 if (parentClass.addChildRelation(parent.getName(), classToGenerate)) {
@@ -95,11 +107,11 @@ public class ProjectionModelGenerator {
         return classesToGenerate;
     }
 
-    private static ClassToGenerate getClassToGenerate(String key, String projectionSuffix, EntityField field, Map<String, ClassToGenerate> classesToGenerate) {
+    private static ClassToGenerate getClassToGenerate(String key, String projectionSuffix, EntityField field, Map<String, ClassToGenerate> classesToGenerate, boolean innerClass) {
 
         ClassToGenerate classToGenerate;
         if (!classesToGenerate.containsKey(key)) {
-            classToGenerate = new ClassToGenerate(field.getOwnerClass().getName() + projectionSuffix, field.getOwnerClass());
+            classToGenerate = new ClassToGenerate(field.getOwnerClass().getName() + projectionSuffix, field.getOwnerClass(), innerClass);
             classesToGenerate.put(key, classToGenerate);
         } else {
             classToGenerate = classesToGenerate.get(key);
