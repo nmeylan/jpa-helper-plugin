@@ -10,7 +10,6 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
@@ -35,7 +34,7 @@ public class GenerateSQLAction extends AnAction {
         Project project = event.getProject();
         Editor editor = event.getData(CommonDataKeys.EDITOR);
         PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
-        ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(project), project);
+        ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(project);
 
         if (psiFile != null) {
             PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
@@ -50,10 +49,10 @@ public class GenerateSQLAction extends AnAction {
 
                     Map<String, ClassToGenerate> classesToGenerate = ProjectionModelGenerator.classesToGenerate(suffix, rootField, selectedFields, dialog.isInnerClass());
                     WriteCommandAction.runWriteCommandAction(project, () -> {
-                       projectionModelGenerator.generateProjection(classesToGenerate, dialog.isInnerClass());
+                        projectionModelGenerator.generateProjection(classesToGenerate, dialog.isInnerClass());
                     });
 
-                    SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project);
+                    SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project, classesToGenerate.get("root-" + psiClass.getQualifiedName()));
                     sqlGeneratorDialog.show();
                 }
             } else {

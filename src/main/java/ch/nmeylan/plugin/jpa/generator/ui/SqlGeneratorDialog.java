@@ -1,5 +1,7 @@
 package ch.nmeylan.plugin.jpa.generator.ui;
 
+import ch.nmeylan.plugin.jpa.generator.ProjectionSQLGenerator;
+import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.ComboboxGenerateItem;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
@@ -26,20 +28,45 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.util.HashMap;
+import java.util.Map;
 
-public class SqlGeneratorDialog   extends DialogWrapper {
+public class SqlGeneratorDialog extends DialogWrapper {
 
     Project project;
     Editor editor;
+    Document document;
+    ProjectionSQLGenerator projectionSQLGenerator;
+    ClassToGenerate rootClassToGenerate;
+    Map<ComboboxGenerateItem, String> codeCache;
 
-    public SqlGeneratorDialog(@Nullable Project project) {
+    public SqlGeneratorDialog(@Nullable Project project, ClassToGenerate classToGenerate) {
         super(project);
         setTitle("Generate SQL");
         setSize(800, 600);
         this.project = project;
         setModal(false);
-        init(); // Initialize the dialog
         setOKButtonText("Copy to clipboard");
+        this.projectionSQLGenerator = new ProjectionSQLGenerator(project);
+        this.rootClassToGenerate = classToGenerate;
+        codeCache = new HashMap<>();
+        this.document = EditorFactory.getInstance().createDocument(generateCode(ComboboxGenerateItem.PROJECTION_CB));
+        init();
+    }
+
+    private String generateCode(ComboboxGenerateItem comboboxGenerateItem) {
+        String cachedCode = codeCache.get(comboboxGenerateItem);
+        if (cachedCode != null) {
+            return cachedCode;
+        }
+        String code;
+        switch (comboboxGenerateItem) {
+            case PROJECTION_CB:
+            default:
+                code = projectionSQLGenerator.generateJPACriteriaBuilderQuery(rootClassToGenerate);
+        }
+        codeCache.put(comboboxGenerateItem, code);
+        return code;
     }
 
     @Override
@@ -86,11 +113,16 @@ public class SqlGeneratorDialog   extends DialogWrapper {
                 return c;
             }
         });
+        comboBox.addActionListener(e -> {
+            ComboboxGenerateItem selectedItem = (ComboboxGenerateItem) comboBox.getSelectedItem();
+            if (selectedItem != null) {
+                document.setText(generateCode(selectedItem));
+            }
+        });
         topFormPanel.add(comboBox, gbConstraints);
 
         // Add top form to main panel
         mainPanel.add(topFormPanel, BorderLayout.NORTH);
-        Document document = EditorFactory.getInstance().createDocument("public void Main(String args[]) {}");
         FileType fileTypeInstance = FileTypeManager.getInstance().getFileTypeByExtension("java");
 
         // Create the editor
@@ -114,7 +146,7 @@ public class SqlGeneratorDialog   extends DialogWrapper {
     }
 
     @Override
-     public void dispose() {
+    public void dispose() {
         super.dispose();
         EditorFactory.getInstance().releaseEditor(editor);
     }

@@ -27,8 +27,8 @@ public class ProjectionModelGenerator {
     private Project project;
     private PsiElementFactory elementFactory;
 
-    public ProjectionModelGenerator(JavaPsiFacade javaPsiFacade, Project project) {
-        this.javaPsiFacade = javaPsiFacade;
+    public ProjectionModelGenerator(Project project) {
+        this.javaPsiFacade = JavaPsiFacade.getInstance(project);
         this.elementFactory = javaPsiFacade.getElementFactory();
         this.project = project;
     }

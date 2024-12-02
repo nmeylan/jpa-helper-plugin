@@ -199,7 +199,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                 }
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
-            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(getProject());
             PsiClass psiClass = projectionModelGenerator.psiClassToCreate(classToGenerates.get("root-fixtures.InventoryEntity"), true);
             CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
             codeStyleManager.reformat(psiClass);
@@ -231,8 +231,8 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
                 }
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
-            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
-            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(JavaPsiFacade.getInstance(getProject()), getProject());
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(getProject());
+            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(getProject());
             for (Map.Entry<String, ClassToGenerate> entry : classToGenerates.entrySet()) {
                 PsiClass psiClass = projectionModelGenerator.psiClassToCreate(entry.getValue(), true);
                 CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());

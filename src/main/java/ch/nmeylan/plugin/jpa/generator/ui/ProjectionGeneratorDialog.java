@@ -1,9 +1,7 @@
 package ch.nmeylan.plugin.jpa.generator.ui;
 
-import ch.nmeylan.plugin.jpa.generator.model.ComboboxGenerateItem;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.CheckboxTree;
 import com.intellij.ui.CheckboxTreeBase;
@@ -13,18 +11,14 @@ import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.util.ui.JBUI;
 
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -84,44 +78,6 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         innerClass = new JCheckBox();
         innerClass.setSelected(true);
         topFormPanel.add(innerClass, gbConstraints);
-
-        // Inner class checkbox label
-        gbConstraints.insets = JBUI.insets(4, 8);
-        gbConstraints.gridx = 0;
-        gbConstraints.weightx = 0;
-        gbConstraints.gridy = 2;
-        gbConstraints.gridwidth = 1;
-        topFormPanel.add(new JLabel("Generate"), gbConstraints);
-        // Generate combobox
-        gbConstraints.insets = JBUI.insets(4, 8);
-        gbConstraints.gridx = 1;
-        gbConstraints.weightx = 1;
-        gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        ComboboxGenerateItem[] items = {
-                ComboboxGenerateItem.PROJECTION_CB,
-                ComboboxGenerateItem.PROJECTION_JDBC,
-                ComboboxGenerateItem.PROJECTION_JPQL,
-                ComboboxGenerateItem.PROJECTION_SPRING_JDBC,
-                ComboboxGenerateItem.INSERT_JDBC,
-                ComboboxGenerateItem.INSERT_SPRING_JDBC
-        };
-
-        // Create the combo box
-        JComboBox<ComboboxGenerateItem> comboBox = new ComboBox<>(items);
-        comboBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(
-                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus
-            ) {
-                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof ComboboxGenerateItem) {
-                    ComboboxGenerateItem item = (ComboboxGenerateItem) value;
-                    setText(item.text());
-                }
-                return c;
-            }
-        });
-        topFormPanel.add(comboBox, gbConstraints);
 
         // Add top form to main panel
         mainPanel.add(topFormPanel, BorderLayout.NORTH);

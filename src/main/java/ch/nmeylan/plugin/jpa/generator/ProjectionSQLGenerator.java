@@ -15,8 +15,8 @@ public class ProjectionSQLGenerator {
     private static final String EOL = "\n";
     private static final String EOL2 = EOL + EOL;
 
-    public ProjectionSQLGenerator(JavaPsiFacade javaPsiFacade, Project project) {
-        this.javaPsiFacade = javaPsiFacade;
+    public ProjectionSQLGenerator(Project project) {
+        this.javaPsiFacade = JavaPsiFacade.getInstance(project);
         this.elementFactory = javaPsiFacade.getElementFactory();
         this.project = project;
     }
