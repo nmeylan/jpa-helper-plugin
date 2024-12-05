@@ -104,14 +104,34 @@ public class ProjectionModelGenerator {
                 classToGenerate = parentClass;
             }
         });
+        setClassesJoinVariableName(classesToGenerate.get("root-"+rootField.getOwnerClass().getQualifiedName()));
         return classesToGenerate;
+    }
+
+    private static void setClassesJoinVariableName(ClassToGenerate root) {
+        if (root.getChildrenRelation() == null) {
+            return;
+        }
+        for (ClassToGenerate relation : root.getChildrenRelation().values()) {
+            String varJoinName = relation.getJoinNameForParent();
+            ClassToGenerate parent = relation.getParentRelation();
+            while (parent != null) {
+                varJoinName = (parent.getFieldNameForInParentRelation() != null ? parent.getFieldNameForInParentRelation() + Character.toUpperCase(varJoinName.charAt(0)) + varJoinName.substring(1) : "" + varJoinName);
+                parent = parent.getParentRelation();
+            }
+            relation.setJoinVariableName(varJoinName);
+
+            if (relation.getChildrenRelation() != null) {
+                setClassesJoinVariableName(relation);
+            }
+        }
     }
 
     private static ClassToGenerate getClassToGenerate(String key, String projectionSuffix, EntityField field, Map<String, ClassToGenerate> classesToGenerate, boolean innerClass) {
 
         ClassToGenerate classToGenerate;
         if (!classesToGenerate.containsKey(key)) {
-            classToGenerate = new ClassToGenerate(field.getOwnerClass().getName() + projectionSuffix, field.getOwnerClass(), innerClass);
+            classToGenerate = new ClassToGenerate(field.getOwnerClass().getName() + projectionSuffix, field.getOwnerClass(), innerClass, field.getOwnerClass().getQualifiedName().substring(0, field.getOwnerClass().getQualifiedName().lastIndexOf(".")));
             classesToGenerate.put(key, classToGenerate);
         } else {
             classToGenerate = classesToGenerate.get(key);

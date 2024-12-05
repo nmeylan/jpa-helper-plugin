@@ -1,6 +1,7 @@
 package ch.nmeylan.plugin.jpa.generator.ui;
 
 import ch.nmeylan.plugin.jpa.generator.ProjectionSQLGenerator;
+import ch.nmeylan.plugin.jpa.generator.PsiUtil;
 import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.ComboboxGenerateItem;
 import com.intellij.openapi.editor.Document;
@@ -12,6 +13,7 @@ import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.psi.PsiFile;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.util.ui.JBUI;
@@ -40,14 +42,14 @@ public class SqlGeneratorDialog extends DialogWrapper {
     ClassToGenerate rootClassToGenerate;
     Map<ComboboxGenerateItem, String> codeCache;
 
-    public SqlGeneratorDialog(@Nullable Project project, ClassToGenerate classToGenerate) {
+    public SqlGeneratorDialog(@Nullable Project project, ClassToGenerate classToGenerate, PsiFile psiFile) {
         super(project);
         setTitle("Generate SQL");
         setSize(800, 600);
         this.project = project;
         setModal(false);
         setOKButtonText("Copy to clipboard");
-        this.projectionSQLGenerator = new ProjectionSQLGenerator(project);
+        this.projectionSQLGenerator = new ProjectionSQLGenerator(project, PsiUtil.getJavaVersion(psiFile));
         this.rootClassToGenerate = classToGenerate;
         codeCache = new HashMap<>();
         this.document = EditorFactory.getInstance().createDocument(generateCode(ComboboxGenerateItem.PROJECTION_CB));
@@ -91,11 +93,11 @@ public class SqlGeneratorDialog extends DialogWrapper {
         gbConstraints.gridwidth = GridBagConstraints.REMAINDER;
         ComboboxGenerateItem[] items = {
                 ComboboxGenerateItem.PROJECTION_CB,
-                ComboboxGenerateItem.PROJECTION_JDBC,
+//                ComboboxGenerateItem.PROJECTION_JDBC,
                 ComboboxGenerateItem.PROJECTION_JPQL,
-                ComboboxGenerateItem.PROJECTION_SPRING_JDBC,
-                ComboboxGenerateItem.INSERT_JDBC,
-                ComboboxGenerateItem.INSERT_SPRING_JDBC
+//                ComboboxGenerateItem.PROJECTION_SPRING_JDBC,
+//                ComboboxGenerateItem.INSERT_JDBC,
+//                ComboboxGenerateItem.INSERT_SPRING_JDBC
         };
 
         // Create the combo box
@@ -106,9 +108,11 @@ public class SqlGeneratorDialog extends DialogWrapper {
                     JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus
             ) {
                 Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof ComboboxGenerateItem) {
-                    ComboboxGenerateItem item = (ComboboxGenerateItem) value;
+                if (value instanceof ComboboxGenerateItem item) {
                     setText(item.text());
+                    if (item.equals(ComboboxGenerateItem.PROJECTION_JPQL)) {
+
+                    }
                 }
                 return c;
             }

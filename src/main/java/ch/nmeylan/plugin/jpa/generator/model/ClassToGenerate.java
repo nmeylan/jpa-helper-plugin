@@ -10,6 +10,7 @@ import java.util.Optional;
 public class ClassToGenerate {
     private final String name;
     private final String importableName;
+    private final String packageName;
     private String fieldNameForInParentRelation;
     private PsiClass existingClass;
     private final LinkedHashSet<EntityField> fields;
@@ -18,9 +19,10 @@ public class ClassToGenerate {
     private HashMap<String, ClassToGenerate> childrenRelation;
 
 
-    public ClassToGenerate(String name, PsiClass existingClass, boolean isInner) {
+    public ClassToGenerate(String name, PsiClass existingClass, boolean isInner, String packageName) {
         this.name = name;
         this.existingClass = existingClass;
+        this.packageName = packageName;
         this.fields = new LinkedHashSet<>();
         if (isInner) {
             importableName = existingClass.getName() + "." + name;
@@ -93,5 +95,9 @@ public class ClassToGenerate {
     public ClassToGenerate setJoinVariableName(String joinVariableName) {
         this.joinVariableName = joinVariableName;
         return this;
+    }
+
+    public String getPackageName() {
+        return packageName;
     }
 }

@@ -52,7 +52,7 @@ public class GenerateSQLAction extends AnAction {
                         projectionModelGenerator.generateProjection(classesToGenerate, dialog.isInnerClass());
                     });
 
-                    SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project, classesToGenerate.get("root-" + psiClass.getQualifiedName()));
+                    SqlGeneratorDialog sqlGeneratorDialog = new SqlGeneratorDialog(project, classesToGenerate.get("root-" + psiClass.getQualifiedName()), psiFile);
                     sqlGeneratorDialog.show();
                 }
             } else {
