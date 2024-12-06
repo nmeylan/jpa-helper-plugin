@@ -13,6 +13,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTypesUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +60,15 @@ public class Helper {
             parentRelation.setDisabledToAvoidLoop();
             return;
         }
+        ArrayList<PsiField> classFields = new ArrayList<>(psiClass.getFields().length);
         visitedClasses.add(psiClass.getQualifiedName());
-        for (PsiField field : psiClass.getFields()) {
+
+        if (PsiUtil.hasSuperclass(psiClass)) {
+            classFields.addAll(Arrays.asList(psiClass.getSuperClass().getFields()));
+        }
+        classFields.addAll(Arrays.asList(psiClass.getFields()));
+
+        for (PsiField field : classFields) {
             if (!isTransientField(field)) {
                 PsiType fieldType = field.getType();
                 EntityField entityField = new EntityField(field.getName(), field, fieldType, psiClass, parentRelation);

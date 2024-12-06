@@ -16,6 +16,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilBase;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.JOptionPane;
 import java.util.List;
@@ -27,6 +28,19 @@ public class GenerateSQLAction extends AnAction {
 
     public GenerateSQLAction() {
         super("Generate Projection DTO");
+    }
+
+    @Override
+    public void update(@NotNull AnActionEvent event) {
+        Project project = event.getProject();
+        Editor editor = event.getData(CommonDataKeys.EDITOR);
+        PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
+        if (psiFile != null) {
+            PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
+            event.getPresentation().setEnabledAndVisible(isEntityClass(psiClass));
+            return;
+        }
+        event.getPresentation().setEnabledAndVisible(false);
     }
 
     @Override
@@ -63,7 +77,7 @@ public class GenerateSQLAction extends AnAction {
         }
     }
 
-    private boolean isEntityClass(PsiClass psiClass) {
+    public static boolean isEntityClass(PsiClass psiClass) {
         PsiModifierList modifierList = psiClass.getModifierList();
         if (modifierList != null) {
             for (PsiAnnotation annotation : modifierList.getAnnotations()) {

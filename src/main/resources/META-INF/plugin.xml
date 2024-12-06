@@ -20,14 +20,14 @@
     <depends>com.intellij.modules.java</depends>
     <actions>
         <action id="ch.nmeylan.plugin.jpa.generator.GenerateSQLAction"
-                class="ch.nmeylan.plugin.jpa.generator.GenerateSQLAction" text="SQL Generator"
+                class="ch.nmeylan.plugin.jpa.generator.GenerateSQLAction" text="Generate Projection Model"
                 description="Generate model for jpa projection">
             <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>
         </action>
     </actions>
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->

@@ -40,4 +40,12 @@ public class PsiUtil {
 
         return 8;
     }
+
+    public static boolean hasSuperclass(PsiClass psiClass) {
+        if (psiClass.getSuperClass() == null) {
+            return false;
+        }
+        String superClassName = psiClass.getSuperClass().getQualifiedName();
+        return !"java.lang.Object".equals(superClassName);
+    }
 }
