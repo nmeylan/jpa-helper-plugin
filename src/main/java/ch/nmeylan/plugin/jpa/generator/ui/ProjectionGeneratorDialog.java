@@ -130,6 +130,9 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         for (EntityField field : fields) {
             CheckedTreeNode newChild = new CheckedTreeNode(field);
             newChild.setChecked(false);
+            if (field.isDisabledToAvoidLoop()) {
+                newChild.setEnabled(false);
+            }
             node.add(newChild);
             if (field.getChildrenFields() != null) {
                 buildCheckboxTree(field.getChildrenFields(), newChild);

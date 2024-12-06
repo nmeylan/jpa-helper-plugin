@@ -56,6 +56,7 @@ public class Helper {
 
     private static void collectEntityFields(PsiClass psiClass, List<EntityField> fields, List<String> visitedClasses, EntityField parentRelation) {
         if (psiClass == null || visitedClasses.contains(psiClass.getQualifiedName())) {
+            parentRelation.setDisabledToAvoidLoop();
             return;
         }
         visitedClasses.add(psiClass.getQualifiedName());

@@ -16,6 +16,7 @@ public class EntityField {
     private final EntityField parentField;
     private boolean isCollection;
     private boolean isRelation;
+    private boolean disabledToAvoidLoop;
 
     public EntityField(String name, PsiField psiField, PsiType type, PsiClass ownerClass, EntityField parentField) {
         this.name = name;
@@ -25,6 +26,7 @@ public class EntityField {
         this.parentField = parentField;
         isCollection = false;
         isRelation = false;
+        disabledToAvoidLoop = false;
     }
 
     public String getName() {
@@ -83,5 +85,12 @@ public class EntityField {
 
     public void setRelation(boolean relation) {
         isRelation = relation;
+    }
+
+    public void setDisabledToAvoidLoop() {
+        disabledToAvoidLoop = true;
+    }
+    public boolean isDisabledToAvoidLoop() {
+        return disabledToAvoidLoop;
     }
 }

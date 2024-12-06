@@ -217,9 +217,33 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
 
     @Test
     public void projectionJPQL() {
-
         projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPQL(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"), MultiStringStyle.TEXT_BLOCK));
         projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPQL(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"), MultiStringStyle.CONCAT));
+    }
+
+    @Test
+    public void OneToManyRelation() {
+         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
+            EntityField root = Helper.entityFields(classes.get("BookEntity"));
+            List<EntityField> selectedFields = new ArrayList<>();
+            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+                selectedFields.add(entityField);
+            });
+            classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
+            ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(getProject());
+            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(getProject());
+            for (Map.Entry<String, ClassToGenerate> entry : classToGenerates.entrySet()) {
+                PsiClass psiClass = projectionModelGenerator.psiClassToCreate(entry.getValue(), true);
+                CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
+                codeStyleManager.reformat(psiClass);
+                System.out.println(psiClass.getText());
+            }
+            String generated = projectionSQLGenerator.generateJPQL(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"), MultiStringStyle.TEXT_BLOCK);
+            System.out.println(generated);
+            generated = projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"));
+            System.out.println(generated);
+        });
     }
 
     private void projectionTest(BiFunction<Map<String, ClassToGenerate>, ProjectionSQLGenerator, String> generateProjection) {

@@ -99,7 +99,16 @@ public class ProjectionSQLGenerator {
     private void selectJPQL(ClassToGenerate classToGenerate, StringBuilder code, String joinVariableName, int level, MultiStringStyle multiStringStyle) {
         for (EntityField field : classToGenerate.getFields()) {
             if (field.isRelation()) {
+                if (field.isDisabledToAvoidLoop()) continue;
+                if (classToGenerate.getChildrenRelation() == null) {
+                    // This should not happen. unless we forget to set disabled to avoid loop
+                    // It used to happen because we prevent user to create loop in projection:
+                    // AuthorEntity has one editor (EditorEntity) has many (authors) AuthorEntity <- this would loop
+                    // we prevent user from selecting this entity
+                    continue;
+                }
                 ClassToGenerate relation = classToGenerate.getChildrenRelation().get(field.getName());
+                if (relation == null) continue; // same as above
                 code.append(startOfStr(level, multiStringStyle)).append("new ").append(relation.getPackageName()).append(".").append(relation.getImportableName()).append("(").append(endOfStr(multiStringStyle));
                 selectJPQL(relation, code, relation.getJoinVariableName(), level + 1, multiStringStyle);
                 code.append(startOfStr(level, multiStringStyle)).append("),").append(endOfStr(multiStringStyle));
