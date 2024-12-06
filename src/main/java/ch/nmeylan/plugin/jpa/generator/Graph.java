@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class Helper {
+public class Graph {
 
     private static Map<String, PsiClass> classes = new HashMap<String, PsiClass>();
     private static Set<String> RELATIONS_ANNOTATIONS = Set.of("OneToMany", "OneToOne", "ManyToMany", "ManyToOne");

@@ -81,7 +81,7 @@ public class ProjectionModelGenerator {
 
     public static Map<String, ClassToGenerate> classesToGenerate(String projectionSuffix, EntityField rootField, List<EntityField> selectedFields, boolean innerClass) {
         Map<String, ClassToGenerate> classesToGenerate = new HashMap<>();
-        Helper.iterateEntityFields(rootField.getChildrenFields(), (field, path) -> {
+        Graph.iterateEntityFields(rootField.getChildrenFields(), (field, path) -> {
             if (!selectedFields.contains(field) || field.isDisabledToAvoidLoop()) {
                 return;
             }

@@ -127,7 +127,7 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
             HashMap<String, Boolean> actual = new HashMap<>();
             Map<String, Boolean> expected = Map.of("a1", true, "a2", true, "a3", true, "a4", true, "a5", true, "a6", true, "b1", false, "b2", false, "b3", false);
             for (PsiField field : psiClass.getFields()) {
-                actual.put(field.getName(), Helper.isCollection(field.getType()));
+                actual.put(field.getName(), Graph.isCollection(field.getType()));
             }
             for (Map.Entry<String, Boolean> entry : expected.entrySet()) {
                 Boolean res = actual.get(entry.getKey());
@@ -140,8 +140,8 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
     public void entityFields_shouldBuildAGraphOfEntityField() throws Exception {
         AtomicReference<EntityField> jobWizard = new AtomicReference<>();
         ReadAction.run(() -> {
-            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
-            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+            EntityField root = Graph.entityFields(classes.get("InventoryEntity"));
+            Graph.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     jobWizard.set(entityField);
                 }
@@ -159,9 +159,9 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
         ReadAction.run(() -> {
-            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
+            EntityField root = Graph.entityFields(classes.get("InventoryEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+            Graph.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     selectedFields.add(entityField);
                 }
@@ -178,10 +178,10 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getFields()).hasSize(1);
         assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getFields()).contains(expectationItemsField.get());
         assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getParentRelation()).isNull();
-        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getChildrenRelation().values()).contains(classToGenerates.get("fixtures.ItemEntity"));
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getChildrenRelation().values()).contains(classToGenerates.get("root.items-fixtures.ItemEntity"));
         assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getFields()).hasSize(1);
         assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
-        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("root-fixtures.InventoryEntity"));
         assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getChildrenRelation()).isNull();
     }
 
@@ -190,9 +190,9 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         AtomicReference<EntityField> expectationItemsField = new AtomicReference<>();
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
-            EntityField root = Helper.entityFields(classes.get("InventoryEntity"));
+            EntityField root = Graph.entityFields(classes.get("InventoryEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+            Graph.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getName().equals("jobWizard")) {
                     selectedFields.add(entityField);
                 }
@@ -225,9 +225,9 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
     public void OneToManyRelation() {
          Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
-            EntityField root = Helper.entityFields(classes.get("BookEntity"));
+            EntityField root = Graph.entityFields(classes.get("BookEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+            Graph.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 selectedFields.add(entityField);
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
@@ -249,9 +249,9 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
     private void projectionTest(BiFunction<Map<String, ClassToGenerate>, ProjectionSQLGenerator, String> generateProjection) {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
-            EntityField root = Helper.entityFields(classes.get("BookEntity"));
+            EntityField root = Graph.entityFields(classes.get("BookEntity"));
             List<EntityField> selectedFields = new ArrayList<>();
-            Helper.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
+            Graph.iterateEntityFields(root.getChildrenFields(), (entityField, depth) -> {
                 if (entityField.getOwnerClass().getName().equals("BookEntity")) {
                     if (entityField.getName().equals("id") || entityField.getName().equals("title") || entityField.getName().equals("isbn") || entityField.getName().equals("price") || entityField.getName().equals("author") || entityField.getName().equals("secondaryAuthor")) {
                         selectedFields.add(entityField);

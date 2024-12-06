@@ -8,7 +8,7 @@
     <name>Jpa-projection-generator</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor email="nicolas@nmeylan.com" url="https://nmeylan.ch">nmeylan</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
@@ -24,6 +24,12 @@
                 description="Generate model for jpa projection">
             <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>
         </action>
+
+<!--        <action id="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction"-->
+<!--                class="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction" text="Generate Projection Query"-->
+<!--                description="Generate query using projection">-->
+<!--            <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>-->
+<!--        </action>-->
     </actions>
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->

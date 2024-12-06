@@ -26,9 +26,6 @@ import java.util.stream.Collectors;
 public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
 
-    public GenerateSQLAction() {
-        super("Generate Projection DTO");
-    }
 
     @Override
     public void update(@NotNull AnActionEvent event) {
@@ -54,7 +51,7 @@ public class GenerateSQLAction extends AnAction {
             PsiClass psiClass = PsiTreeUtil.getParentOfType(PsiUtilBase.getElementAtCaret(editor), PsiClass.class);
 
             if (psiClass != null && isEntityClass(psiClass)) {
-                EntityField rootField = Helper.entityFields(psiClass);
+                EntityField rootField = Graph.entityFields(psiClass);
                 ProjectionGeneratorDialog dialog = new ProjectionGeneratorDialog(project, rootField);
 
                 if (dialog.showAndGet()) {
