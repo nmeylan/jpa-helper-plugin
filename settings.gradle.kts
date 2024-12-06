@@ -5,4 +5,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "jpa-projection-generator"
+rootProject.name = "jpa-sql-generator"

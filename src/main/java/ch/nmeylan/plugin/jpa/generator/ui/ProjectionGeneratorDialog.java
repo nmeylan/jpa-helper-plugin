@@ -36,7 +36,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
         super(project);
         this.rootField = rootField;
         setTitle("Generate Projection");
-        setSize(400, getSize().height);
+        setSize(400, 700);
         init(); // Initialize the dialog
         setOKButtonText("Generate");
     }

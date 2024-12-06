@@ -1,6 +1,5 @@
 package ch.nmeylan.plugin.jpa.generator;
 
-import com.intellij.lang.jvm.JvmParameter;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -11,6 +10,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiParameter;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilBase;
 import org.jetbrains.annotations.NotNull;
@@ -86,8 +86,8 @@ public class GenerateProjectionQueryAction extends AnAction {
             if (PsiUtil.hasSuperclass(psiClass)) {
                 parentClass = psiClass.getSuperClass();
             }
-            List<PsiField> fields = new ArrayList<>(method.getParameters().length);
-            for (JvmParameter param : method.getParameters()) {
+            List<PsiField> fields = new ArrayList<>(method.getParameterList() != null ? method.getParameterList().getParametersCount() : 0);
+            for (PsiParameter param : method.getParameterList().getParameters()) {
                 for(PsiField field : parentClass.getFields()) {
                     if (field.getName().equals(param.getName())) {
                         fields.add(field);

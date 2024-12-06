@@ -4,14 +4,14 @@ plugins {
 }
 
 group = "ch.nmeylan.plugin"
-version = "1.0-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 intellij {
-    version.set("2023.2.6")
+    version.set("2022.2.5")
     type.set("IC") // Target IDE Platform
 
     plugins.set(listOf("java"))
@@ -38,8 +38,9 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("232")
+        sinceBuild.set("222")
         untilBuild.set("")
+        version.set(project.version.toString())
     }
 
     signPlugin {
