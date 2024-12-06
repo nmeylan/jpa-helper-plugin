@@ -2,12 +2,12 @@ package ch.nmeylan.plugin.jpa.generator;
 
 import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
+import ch.nmeylan.plugin.jpa.generator.model.MultiStringStyle;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiElementFactory;
 
 public class ProjectionSQLGenerator {
-    private final int javaVersion;
     private JavaPsiFacade javaPsiFacade;
     private Project project;
     private PsiElementFactory elementFactory;
@@ -16,11 +16,10 @@ public class ProjectionSQLGenerator {
     private static final String EOL = "\n";
     private static final String EOL2 = EOL + EOL;
 
-    public ProjectionSQLGenerator(Project project, int javaVersion) {
+    public ProjectionSQLGenerator(Project project) {
         this.javaPsiFacade = JavaPsiFacade.getInstance(project);
         this.elementFactory = javaPsiFacade.getElementFactory();
         this.project = project;
-        this.javaVersion = javaVersion;
     }
 
     public String generateJPACriteriaBuilderQuery(ClassToGenerate root) {
@@ -75,18 +74,76 @@ public class ProjectionSQLGenerator {
         }
     }
 
-    public String generateJPQL(ClassToGenerate root) {
+    public String generateJPQL(ClassToGenerate root, MultiStringStyle multiStringStyle) {
         StringBuilder code = new StringBuilder();
-        if (javaVersion >= 15) {
+        if (multiStringStyle.isTextBlock()) {
             code.append("\"\"\"").append(EOL);
-        } else {
-            code.append('"');
         }
-        String endOfStr = javaVersion >= 15 ? EOL : '"' + EOL;
+        String endOfStr = endOfStr(multiStringStyle);
+        String startOfStr = startOfStr(0, multiStringStyle);
+        String rootAlias = lowerFirstChar(root);
+        code.append(multiStringStyle.isTextBlock() ? "" : '"')
+                .append("SELECT new ").append(root.getPackageName()).append(".").append(root.getImportableName()).append("(").append(endOfStr);
+        selectJPQL(root, code, rootAlias, 1, multiStringStyle);
+        code.append(startOfStr).append(")").append(endOfStr);
+        code.append(startOfStr).append("FROM ").append(root.getImportableName()).append(" ").append(rootAlias).append(endOfStr);
+        generateJoinJPQL(root, code, rootAlias, multiStringStyle);
 
-        code.append("SELECT new ").append(root.getPackageName()).append(".").append(root.getImportableName()).append("(").append(endOfStr);
-//        code.
-
+        code.append(";").append(EOL);
+        if (multiStringStyle.isTextBlock()) {
+            code.append("\"\"\"").append(EOL);
+        }
         return code.toString();
+    }
+
+    private void selectJPQL(ClassToGenerate classToGenerate, StringBuilder code, String joinVariableName, int level, MultiStringStyle multiStringStyle) {
+        for (EntityField field : classToGenerate.getFields()) {
+            if (field.isRelation()) {
+                ClassToGenerate relation = classToGenerate.getChildrenRelation().get(field.getName());
+                code.append(startOfStr(level, multiStringStyle)).append("new ").append(relation.getPackageName()).append(".").append(relation.getImportableName()).append("(").append(endOfStr(multiStringStyle));
+                selectJPQL(relation, code, relation.getJoinVariableName(), level + 1, multiStringStyle);
+                code.append(startOfStr(level, multiStringStyle)).append("),").append(endOfStr(multiStringStyle));
+            } else {
+                code.append(startOfStr(level, multiStringStyle)).append(joinVariableName).append(".").append(field.getName()).append(",").append(endOfStr(multiStringStyle));
+            }
+        }
+        // removing trailing comma
+        if (multiStringStyle.isTextBlock()) {
+            code.delete(code.length() - 2, code.length() - 1);
+        } else {
+            code.delete(code.length() - 3, code.length() - 2);
+        }
+    }
+
+    private void generateJoinJPQL(ClassToGenerate root, StringBuilder code, String joinName, MultiStringStyle multiStringStyle) {
+        if (root.getChildrenRelation() == null) {
+            return;
+        }
+        for (ClassToGenerate relation : root.getChildrenRelation().values()) {
+
+            code.append(startOfStr(0, multiStringStyle)).append("JOIN ").append(joinName != null ? joinName + "." : "").append(relation.getFieldNameForInParentRelation()).append(" ")
+                    .append(relation.getJoinNameForParent()).append(" ").append(endOfStr(multiStringStyle));
+
+            if (relation.getChildrenRelation() != null) {
+                generateJoinJPQL(relation, code, relation.getJoinVariableName(), multiStringStyle);
+            }
+        }
+    }
+
+    private String endOfStr(MultiStringStyle multiStringStyle) {
+        return multiStringStyle.isTextBlock() ? EOL : '"' + EOL;
+    }
+
+    private String startOfStr(int level, MultiStringStyle multiStringStyle) {
+        String indentation = (multiStringStyle.isTextBlock() ? "" : "+ \"");
+        for (int i = 0; i < level; i++) {
+            indentation += INDENT;
+        }
+        return indentation;
+//        return multiStringStyle >= 15 ? indentation : indentation + "\"";
+    }
+
+    private static String lowerFirstChar(ClassToGenerate root) {
+        return Character.toLowerCase(root.getExistingClass().getName().charAt(0)) + root.getExistingClass().getName().substring(1);
     }
 }

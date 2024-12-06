@@ -2,6 +2,7 @@ package ch.nmeylan.plugin.jpa.generator;
 
 import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
+import ch.nmeylan.plugin.jpa.generator.model.MultiStringStyle;
 import com.intellij.openapi.application.PluginPathManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.command.WriteCommandAction;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -171,16 +173,16 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
 
         });
         assertThat(classToGenerates).isNotEmpty();
-        assertThat(classToGenerates.get("fixtures.InventoryEntity")).isNotNull();
-        assertThat(classToGenerates.get("fixtures.ItemEntity")).isNotNull();
-        assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).hasSize(1);
-        assertThat(classToGenerates.get("fixtures.InventoryEntity").getFields()).contains(expectationItemsField.get());
-        assertThat(classToGenerates.get("fixtures.InventoryEntity").getParentRelation()).isNull();
-        assertThat(classToGenerates.get("fixtures.InventoryEntity").getChildrenRelation().values()).contains(classToGenerates.get("fixtures.ItemEntity"));
-        assertThat(classToGenerates.get("fixtures.ItemEntity").getFields()).hasSize(1);
-        assertThat(classToGenerates.get("fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
-        assertThat(classToGenerates.get("fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
-        assertThat(classToGenerates.get("fixtures.ItemEntity").getChildrenRelation()).isNull();
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity")).isNotNull();
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity")).isNotNull();
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getFields()).hasSize(1);
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getFields()).contains(expectationItemsField.get());
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getParentRelation()).isNull();
+        assertThat(classToGenerates.get("root-fixtures.InventoryEntity").getChildrenRelation().values()).contains(classToGenerates.get("fixtures.ItemEntity"));
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getFields()).hasSize(1);
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getFields().iterator().next().getName()).isEqualTo("jobWizard");
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getParentRelation()).isEqualTo(classToGenerates.get("fixtures.InventoryEntity"));
+        assertThat(classToGenerates.get("root.items-fixtures.ItemEntity").getChildrenRelation()).isNull();
     }
 
     @Test
@@ -209,6 +211,18 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
 
     @Test
     public void projectionJPACriteriaBuilder() {
+        projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity")));
+        projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity")));
+    }
+
+    @Test
+    public void projectionJPQL() {
+
+        projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPQL(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"), MultiStringStyle.TEXT_BLOCK));
+        projectionTest((classToGenerates, projectionSQLGenerator) -> projectionSQLGenerator.generateJPQL(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"), MultiStringStyle.CONCAT));
+    }
+
+    private void projectionTest(BiFunction<Map<String, ClassToGenerate>, ProjectionSQLGenerator, String> generateProjection) {
         Map<String, ClassToGenerate> classToGenerates = new HashMap<>();
         WriteCommandAction.runWriteCommandAction(getProject(), () -> {
             EntityField root = Helper.entityFields(classes.get("BookEntity"));
@@ -232,14 +246,14 @@ public class PluginTest extends LightJavaCodeInsightFixtureTestCase {
             });
             classToGenerates.putAll(ProjectionModelGenerator.classesToGenerate("Projection", root, selectedFields, true));
             ProjectionModelGenerator projectionModelGenerator = new ProjectionModelGenerator(getProject());
-            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(getProject(), 11);
+            ProjectionSQLGenerator projectionSQLGenerator = new ProjectionSQLGenerator(getProject());
             for (Map.Entry<String, ClassToGenerate> entry : classToGenerates.entrySet()) {
                 PsiClass psiClass = projectionModelGenerator.psiClassToCreate(entry.getValue(), true);
                 CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(getProject());
                 codeStyleManager.reformat(psiClass);
                 System.out.println(psiClass.getText());
             }
-            String generated = projectionSQLGenerator.generateJPACriteriaBuilderQuery(classToGenerates.get("root-ch.nmeylan.blog.example.bookstore.BookEntity"));
+            String generated = generateProjection.apply(classToGenerates, projectionSQLGenerator);
             System.out.println(generated);
         });
 

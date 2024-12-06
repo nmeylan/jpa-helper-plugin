@@ -92,7 +92,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
                 String text = null;
                 EntityField userObject = (EntityField) node.getUserObject();
                 if (userObject == null) {
-                    text = "roooot";
+                    text = "";
                 } else if (userObject.getName() == null) {
                     text = userObject.getOwnerClass().getName();
                 } else {
@@ -101,6 +101,7 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
                 getTextRenderer().append(text, SimpleTextAttributes.REGULAR_ATTRIBUTES);
             }
         }, root, checkPolicy);
+        checkboxTree.setRootVisible(true);
 
         JBScrollPane scrollPane = new JBScrollPane(checkboxTree);
         scrollPane.setPreferredSize(new Dimension(300, 200));
@@ -110,11 +111,9 @@ public class ProjectionGeneratorDialog extends DialogWrapper {
     }
 
     public static CheckedTreeNode buildCheckboxTree(EntityField rootField) {
-        CheckedTreeNode root = new CheckedTreeNode(null);
+        CheckedTreeNode root = new CheckedTreeNode(rootField);
         root.setChecked(false);
-        CheckedTreeNode root_ = new CheckedTreeNode(rootField);
-        root.add(root_);
-        buildCheckboxTree(rootField.getChildrenFields(), root_);
+        buildCheckboxTree(rootField.getChildrenFields(), root);
         return root;
     }
 
