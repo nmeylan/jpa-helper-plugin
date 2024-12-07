@@ -45,11 +45,11 @@
             <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>
         </action>
 
-<!--        <action id="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction"-->
-<!--                class="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction" text="Generate Projection Query"-->
-<!--                description="Generate query using projection">-->
-<!--            <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>-->
-<!--        </action>-->
+        <action id="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction"
+                class="ch.nmeylan.plugin.jpa.generator.GenerateProjectionQueryAction" text="Generate Projection Query"
+                description="Generate query using projection">
+            <add-to-group group-id="GenerateGroup" anchor="after" relative-to-action="SqlGenerateGroup"/>
+        </action>
     </actions>
 
     <depends>com.intellij.modules.java</depends>
