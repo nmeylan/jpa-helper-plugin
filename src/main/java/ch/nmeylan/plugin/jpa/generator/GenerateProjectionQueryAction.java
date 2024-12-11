@@ -1,5 +1,6 @@
 package ch.nmeylan.plugin.jpa.generator;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -23,6 +24,10 @@ import static ch.nmeylan.plugin.jpa.generator.GenerateSQLAction.isEntityClass;
 
 public class GenerateProjectionQueryAction extends AnAction {
 
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
+    }
 
     @Override
     public void update(@NotNull AnActionEvent event) {

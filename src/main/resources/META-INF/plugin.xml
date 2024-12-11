@@ -30,10 +30,26 @@
   ]]></description>
      <change-notes>
         <![CDATA[
-           version 1.0.0
+           version 1.0.4
            <br/>
            <ul>
-             <li></li>
+             <li>Fix plugin warning: <pre>ActionUpdateThread.OLD_EDT</pre> is deprecated and going to be removed soon</li>
+           </ul>
+           version 1.0.3-SNAPSHOT
+           <br/>
+           <ul>
+             <li>Remove default plugin logo</li>
+           </ul>
+           version 1.0.2-SNAPSHOT
+           <br/>
+           <ul>
+             <li>Fix artifact</li>
+           </ul>
+           version 1.0.1-SNAPSHOT
+           <br/>
+           <ul>
+             <li>Generate projection model from entity</li>
+             <li>Generate projection JPA and JPQL code</li>
            </ul>
        ]]>
     </change-notes>
