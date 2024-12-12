@@ -4,6 +4,7 @@ import ch.nmeylan.plugin.jpa.generator.model.ClassToGenerate;
 import ch.nmeylan.plugin.jpa.generator.model.EntityField;
 import ch.nmeylan.plugin.jpa.generator.ui.ProjectionGeneratorDialog;
 import ch.nmeylan.plugin.jpa.generator.ui.SqlGeneratorDialog;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -26,6 +27,10 @@ import java.util.stream.Collectors;
 public class GenerateSQLAction extends AnAction {
     private final static List<String> entityClasses = List.of("javax.persistence.Entity", "jakarta.persistence.Entity");
 
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
+    }
 
     @Override
     public void update(@NotNull AnActionEvent event) {

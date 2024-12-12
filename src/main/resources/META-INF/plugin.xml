@@ -30,22 +30,23 @@
   ]]></description>
      <change-notes>
         <![CDATA[
-           version 1.0.4
+           <h2>version 1.0.5</h2>
+           <h2>version 1.0.4</h2>
            <br/>
            <ul>
              <li>Fix plugin warning: <pre>ActionUpdateThread.OLD_EDT</pre> is deprecated and going to be removed soon</li>
            </ul>
-           version 1.0.3-SNAPSHOT
+           <h2>version 1.0.3-SNAPSHOT</h2>
            <br/>
            <ul>
              <li>Remove default plugin logo</li>
            </ul>
-           version 1.0.2-SNAPSHOT
+           <h2>version 1.0.2-SNAPSHOT</h2>
            <br/>
            <ul>
              <li>Fix artifact</li>
            </ul>
-           version 1.0.1-SNAPSHOT
+           <h2>version 1.0.1-SNAPSHOT</h2>
            <br/>
            <ul>
              <li>Generate projection model from entity</li>
